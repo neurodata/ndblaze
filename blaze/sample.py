@@ -12,29 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import re
+from pyspark import SparkContext, SparkConf
 
-from django.shortcuts import render
-from django.http import HttpResponse
+def postData(webargs):
+  """Parse the arguments"""
 
-import sample
-
-import logging
-
-def test(request):
-  return HttpResponse("Hello World")
-
-def post(request, web_args):
-  """RESTful URL for posting data"""
-
-  try:
-    m = re.match(r"(\w+)/(?P<channel>[\w+,/-]+)?/?hdf5/([\w,/-]+)$", web_args)
-    [token, channel, service, cutout_args] = [i for i in m.groups()]
-
-    sample.postData()
-
-  except Exception, e:
-    print "Testing"
-    #logger.warning("Incorrect format for arguments. {}".format(e))
-  
-  return HttpResponse("Hello World")
+  sc = SparkContext(master, 'Testing')
+  import pdb; pdb.set_trace()
