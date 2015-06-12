@@ -12,10 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pyspark import SparkContext, SparkConf
+import random
+import numpy as np
+from params import Params
+from postmethods import postHDF5
 
-def postData(webargs):
-  """Parse the arguments"""
+p = Params()
+p.token = "unittest_rw"
+p.resolution = 0
+p.channels = ['IMAGE1']
+p.window = [0,0]
+p.channel_type = "image"
+p.datatype = "uint8"
 
-  sc = SparkContext(master, 'Testing')
-  import pdb; pdb.set_trace()
+class Test_Hdf5:
+
+  def test_simple(self):
+    """Test a simple post"""
+  
+  p.args = (0,128,0,128,0,16)
+  image_data = np.ones([1,16,128,128], dtype=np.uint8) * random.randint(0,255)
+  response = postHDF5(p, image_data)

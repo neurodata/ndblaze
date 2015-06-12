@@ -15,26 +15,26 @@
 import re
 
 from django.shortcuts import render
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseNotFound, HttpResponseBadRequest
+from django.views.decorators.csrf import csrf_exempt
 
-import sample
+from extractcube import postData
 
 import logging
 
 def test(request):
   return HttpResponse("Hello World")
 
-def post(request, web_args):
+def post(request, webargs):
   """RESTful URL for posting data"""
 
   try:
-    m = re.match(r"(\w+)/(?P<channel>[\w+,/-]+)?/?hdf5/([\w,/-]+)$", web_args)
-    [token, channel, service, cutout_args] = [i for i in m.groups()]
-
-    sample.postData()
+    #m = re.match(r"(\w+)/(?P<channel>[\w+,/-]+)?/?hdf5/([\w,/-]+)$", webargs)
+    #[token, channel, service, cutout_args] = [i for i in m.groups()]
+    postData(webargs, request.body)
 
   except Exception, e:
-    print "Testing"
+    return HttpResponseBadRequest()
     #logger.warning("Incorrect format for arguments. {}".format(e))
   
-  return HttpResponse("Hello World")
+  return HttpResponse("Successful", content_type="text/html")

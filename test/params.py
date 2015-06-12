@@ -12,9 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.conf.urls import url
-from . import views
 
-urlpatterns = [
-  url(r'^(?P<webargs>.*)$', views.post, name='post')
-]
+class Params:
+  """Arguments Class"""
+  
+  def __init__ (self):
+    self.baseurl = ""
+    self.token = ""
+    self.resolution = 0
+    self.channels = []
+    self.num_objects = 1
+    self.args = None
+    self.annoid = 0
+    self.field = None
+    self.value = None
+    self.anntype = 1
