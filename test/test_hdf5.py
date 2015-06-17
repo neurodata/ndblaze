@@ -33,3 +33,11 @@ class Test_Hdf5:
   p.args = (0,128,0,128,0,16)
   image_data = np.ones([1,16,128,128], dtype=np.uint8) * random.randint(0,255)
   response = postHDF5(p, image_data)
+
+  p.args = (128,384,128,384,0,16)
+  image_data = np.ones([1,16,256,256], dtype=np.uint8) * random.randint(0,255)
+  response = postHDF5(p, image_data)
+  
+  p.args = (128,384,128,384,16,32)
+  image_data = np.ones([1,16,256,256], dtype=np.uint8) * random.randint(0,255)
+  response = postHDF5(p, image_data)

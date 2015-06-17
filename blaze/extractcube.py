@@ -16,8 +16,9 @@ import re
 import h5py
 import tempfile
 from contextlib import closing
-from pyspark import SparkContext, SparkConf
 
+#from blazecontext import BlazeContext
+from blaze import cube_map
 import ocplib
 
 def postData(webargs, post_data):
@@ -50,17 +51,32 @@ def postData(webargs, post_data):
     h5_datatype = h5f.get(channel_name)['DATATYPE'].value[0]
     h5_channeltype = h5f.get(channel_name)['CHANNELTYPE'].value[0]
     
-    [xcubedim, ycubedim, zcubedim] = [128,128,16]
+    # KL TODO Get this via projinfo from OCP
+    [zimagesz, yimagesz, ximagesz] = [10000, 10000, 100]
+    [zvoxarray, yvoxarray, xvoxarray] = voxarray.shape
+    [xcubedim, ycubedim, zcubedim] = cubedim = [128, 128, 16]
+    [xoffset, yoffset, zoffset] = [0, 0, 0]
 
     cube_list = []
-    for z in (z1, z2, zcubedim):
-      for y in (y1, y2, ycubedim):
-        for x in (x1, x2, xcubedim):
+    for z in range(z1, z2, zcubedim):
+      for y in range(y1, y2, ycubedim):
+        for x in range(x1, x2, xcubedim):
+          zidx = ocplib.XYZMorton([(x-xoffset)/xcubedim, (y-yoffset)/ycubedim, (z-zoffset)/zcubedim])
+         
+          # Parameters in the cube slab
+          xmin = x-x1 
+          ymin = y-y1
+          zmin = z-z1
+          xmax = min(xvoxarray, xmin+xcubedim)
+          ymax = min(yvoxarray, ymin+ycubedim)
+          zmax = min(zvoxarray, zmin+zcubedim)
 
-          zidx = ocplib.XYZMorton([x,y,z])
-          cube_data = voxarray[z:zcubedim, y:ycubedim, x:xcubedim]
+          print xmin, xmax, ymin, ymax, zmin, zmax
+          cube_data = voxarray[zmin:zmax, ymin:ymax, xmin:xmax]
           cube_list.append((zidx,cube_data))
     
+    cube_rdd = cube_map.getList(token, channel_name)
+    cube_rdd.insertData(cube_list)
+
     import pdb; pdb.set_trace()
-    sc = SparkContext(master, 'Testing')
-    cube_rdd = sc.parallelize(cube_list)
+    print "Testing"
