@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from operator import itemgetter
+
 import ocplib
 from params import Params
 from urlmethods import postHDF5
@@ -35,22 +37,49 @@ class CubeList:
     # Inserting data in the rdd
     self.rdd = self.rdd.union(self.sc.parallelize(cube_list))
 
-    # trigger for inserting data in the background
+    # KL TODO trigger for inserting data under memory pressure
     if self.rdd.count() >= 5:
-      self.postData()
+      #self.postData()
+      self.flushData()
 
   def postData(self):
     """Write a blob of data sequentially"""
 
-    import pdb; pdb.set_trace()
-    sorted_list = self.rdd.sortByKey().zipWithIndex().groupBy(lambda ((x,y),z):x-z).collect()
+    #sorted_list = self.rdd.sortByKey().zipWithIndex().groupBy(lambda ((x,y),z):x-z).collect()
+    #sorted_list = self.rdd.sortByKey().zipWithIndex().groupBy(lambda ((x,y),z):x-z).values().map(lambda x: list(x)).max(key=len)
+    self.rdd.sortByKey().zipWithIndex().groupBy(lambda ((x,y),z):x-z).values().map(lambda x: list(x)).sortBy(lambda x : len(x), ascending=False)
+    print "Largest List", [i[0] for i in [i[0] for i in sorted_list]]
+    self.rdd = self.rdd.subtractByKey(self.sc.parallelize(sorted_list.first()).map(itemgetter(0)))
+    print "Keys in List", self.rdd.keys().collect()
 
     # KL TODO combine cubes together to form large cube
     
-    for index,iterable in sorted_list:
-      for ((zidx,post_data), index) in iterable:
+    for ((zidx,post_data), index) in sorted_list:
+      [x, y, z] = ocplib.MortonXYZ(zidx)
+
+      # Caculate the args and post the request
+      self.p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
+      print "Posting", zidx
+      postHDF5(self.p, post_data)
+
+  def flushData(self):
+    """Remove all the data from rdd, biggest list first"""
+
+    iterator = self.rdd.sortByKey().zipWithIndex().groupBy(lambda ((x,y),z):x-z).values().map(lambda x: list(x)).toLocalIterator()
+
+    for sorted_list in iterator:
+      for ((zidx,post_data), index) in sorted_list:
         [x, y, z] = ocplib.MortonXYZ(zidx)
 
         # Caculate the args and post the request
         self.p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
+        print "Posting", zidx
         postHDF5(self.p, post_data)
+
+    self.emptyRDD()
+
+  def emptyRDD(self):
+    """Make the RDD empty"""
+
+    # KL TODO Better way to make an exisitng RDD empty. This seems to be the fastest for now
+    self.rdd = self.sc.parallelize("")

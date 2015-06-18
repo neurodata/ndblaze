@@ -38,7 +38,25 @@ class Test_Hdf5:
   p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
   image_data = np.ones([1,16,128,128], dtype=np.uint8) * random.randint(0,255)
   response = postHDF5(p, image_data)
+  
+  # Posting zindex 6
+  [x,y,z] = ocplib.MortonXYZ(6)
+  p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
+  image_data = np.ones([1,16,128,128], dtype=np.uint8) * random.randint(0,255)
+  response = postHDF5(p, image_data)
 
+  # Posting zindex 8
+  [x,y,z] = ocplib.MortonXYZ(8)
+  p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
+  image_data = np.ones([1,16,128,128], dtype=np.uint8) * random.randint(0,255)
+  response = postHDF5(p, image_data)
+  
+  # Posting zindex 5
+  [x,y,z] = ocplib.MortonXYZ(5)
+  p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
+  image_data = np.ones([1,16,128,128], dtype=np.uint8) * random.randint(0,255)
+  response = postHDF5(p, image_data)
+  
   # Posting zindex 1
   [x,y,z] = ocplib.MortonXYZ(1)
   p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
@@ -56,15 +74,9 @@ class Test_Hdf5:
   p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
   image_data = np.ones([1,16,128,128], dtype=np.uint8) * random.randint(0,255)
   response = postHDF5(p, image_data)
-
-  # Posting zindex 5
-  [x,y,z] = ocplib.MortonXYZ(5)
-  p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
-  image_data = np.ones([1,16,128,128], dtype=np.uint8) * random.randint(0,255)
-  response = postHDF5(p, image_data)
   
-  # Posting zindex 6
-  [x,y,z] = ocplib.MortonXYZ(6)
+  # Posting zindex 7
+  [x,y,z] = ocplib.MortonXYZ(7)
   p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
   image_data = np.ones([1,16,128,128], dtype=np.uint8) * random.randint(0,255)
   response = postHDF5(p, image_data)
