@@ -22,12 +22,12 @@ class CubeMap:
     self.sc = sparkContext
     self.cube_map = {}
 
-  def getList(self, token, channel_name):
+  def getCubeRdd(self, token, channel_name, resolution):
 
-    key = (token,channel_name)
+    key = (token,channel_name,resolution)
     if key in self.cube_map:
       pass
     else:
-      self.cube_map[key] = CubeList(self.sc)
+      self.cube_map[key] = CubeList(self.sc, token, channel_name, resolution)
 
     return self.cube_map[key]

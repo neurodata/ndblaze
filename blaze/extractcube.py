@@ -71,12 +71,9 @@ def postData(webargs, post_data):
           ymax = min(yvoxarray, ymin+ycubedim)
           zmax = min(zvoxarray, zmin+zcubedim)
 
-          print xmin, xmax, ymin, ymax, zmin, zmax
           cube_data = voxarray[zmin:zmax, ymin:ymax, xmin:xmax]
           cube_list.append((zidx,cube_data))
-    
-    cube_rdd = cube_map.getList(token, channel_name)
+   
+    cube_rdd = cube_map.getCubeRdd(token, channel_name, res)
     cube_rdd.insertData(cube_list)
-
-    import pdb; pdb.set_trace()
     print "Testing"

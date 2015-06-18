@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from util.urlmethods import postNPZ
+from util.urlmethods import postNPZ, postHDF5
 from params import Params
 
 class WriteCube:
@@ -37,4 +37,4 @@ class WriteCube:
     p.channels = [self.channel]
     p.resolution = self.resolution
     p.args = (x1, x2, y1, y2, z1, z2)
-    postNPZ(p, post_data)
+    postHDF5(p, post_data)

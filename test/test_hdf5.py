@@ -14,13 +14,16 @@
 
 import random
 import numpy as np
+
+import settings
+from blaze import ocplib
 from params import Params
 from postmethods import postHDF5
 
 p = Params()
-p.token = "unittest_rw"
+p.token = "blaze"
 p.resolution = 0
-p.channels = ['IMAGE1']
+p.channels = ['image']
 p.window = [0,0]
 p.channel_type = "image"
 p.datatype = "uint8"
@@ -29,15 +32,39 @@ class Test_Hdf5:
 
   def test_simple(self):
     """Test a simple post"""
-  
-  p.args = (0,128,0,128,0,16)
+
+  # Posting zindex 0
+  [x,y,z] = ocplib.MortonXYZ(0)
+  p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
   image_data = np.ones([1,16,128,128], dtype=np.uint8) * random.randint(0,255)
   response = postHDF5(p, image_data)
 
-  p.args = (128,384,128,384,0,16)
-  image_data = np.ones([1,16,256,256], dtype=np.uint8) * random.randint(0,255)
+  # Posting zindex 1
+  [x,y,z] = ocplib.MortonXYZ(1)
+  p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
+  image_data = np.ones([1,16,128,128], dtype=np.uint8) * random.randint(0,255)
   response = postHDF5(p, image_data)
   
-  p.args = (128,384,128,384,16,32)
-  image_data = np.ones([1,16,256,256], dtype=np.uint8) * random.randint(0,255)
+  # Posting zindex 2
+  [x,y,z] = ocplib.MortonXYZ(2)
+  p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
+  image_data = np.ones([1,16,128,128], dtype=np.uint8) * random.randint(0,255)
+  response = postHDF5(p, image_data)
+
+  # Posting zindex 3
+  [x,y,z] = ocplib.MortonXYZ(3)
+  p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
+  image_data = np.ones([1,16,128,128], dtype=np.uint8) * random.randint(0,255)
+  response = postHDF5(p, image_data)
+
+  # Posting zindex 5
+  [x,y,z] = ocplib.MortonXYZ(5)
+  p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
+  image_data = np.ones([1,16,128,128], dtype=np.uint8) * random.randint(0,255)
+  response = postHDF5(p, image_data)
+  
+  # Posting zindex 6
+  [x,y,z] = ocplib.MortonXYZ(6)
+  p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
+  image_data = np.ones([1,16,128,128], dtype=np.uint8) * random.randint(0,255)
   response = postHDF5(p, image_data)
