@@ -101,9 +101,9 @@ def getHDF5 (p, time=False):
 
   # Build the url and then create a hdf5 object
   if time:
-    url = 'http://{}/ca/{}/{}/hdf5/{}/{},{}/{},{}/{},{}/{},{}/'.format(SITE_HOST, p.token, ','.join(p.channels), p.resolution, *p.args )
+    url = 'http://{}/blaze/{}/{}/hdf5/{}/{},{}/{},{}/{},{}/{},{}/'.format(SITE_HOST, p.token, ','.join(p.channels), p.resolution, *p.args )
   else:
-    url = 'http://{}/ca/{}/{}/hdf5/{}/{},{}/{},{}/{},{}/'.format(SITE_HOST, p.token, ','.join(p.channels), p.resolution, *p.args)
+    url = 'http://{}/blaze/{}/{}/hdf5/{}/{},{}/{},{}/{},{}/'.format(SITE_HOST, p.token, ','.join(p.channels), p.resolution, *p.args)
 
   # Get the image back
   f = urllib2.urlopen (url)

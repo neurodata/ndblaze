@@ -13,8 +13,8 @@
 # limitations under the License.
 
 from django.conf.urls import url
-from . import views
+from blaze.views import BlazeView
 
 urlpatterns = [
-  url(r'^(?P<webargs>.*)$', views.post, name='post')
+  url(r'^(?P<webargs>.*)$', BlazeView.as_view())
 ]

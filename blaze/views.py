@@ -17,24 +17,31 @@ import re
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
+from django.views.generic import View
 
-from extractcube import postData
+from extractcube import postData, getData
 
 import logging
 
-def test(request):
-  return HttpResponse("Hello World")
 
-def post(request, webargs):
-  """RESTful URL for posting data"""
+class BlazeView(View):
 
-  try:
-    #m = re.match(r"(\w+)/(?P<channel>[\w+,/-]+)?/?hdf5/([\w,/-]+)$", webargs)
-    #[token, channel, service, cutout_args] = [i for i in m.groups()]
-    postData(webargs, request.body)
+  def get(self, request, webargs):
 
-  except Exception, e:
-    return HttpResponseBadRequest()
-    #logger.warning("Incorrect format for arguments. {}".format(e))
-  
-  return HttpResponse("Successful", content_type="text/html")
+    try:
+      return HttpResponse(getData(webargs), content_type="product/hdf5")
+    except Exception, e:
+      return HTTPResponseBadRequest()
+
+  def post(self, request, webargs):
+    """RESTful URL for posting data"""
+
+    try:
+      #m = re.match(r"(\w+)/(?P<channel>[\w+,/-]+)?/?hdf5/([\w,/-]+)$", webargs)
+      #[token, channel, service, cutout_args] = [i for i in m.groups()]
+      postData(webargs, request.body)
+      return HttpResponse("Successful", content_type="text/html")
+
+    except Exception, e:
+      return HttpResponseBadRequest()
+      #logger.warning("Incorrect format for arguments. {}".format(e))

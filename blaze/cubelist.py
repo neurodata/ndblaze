@@ -83,3 +83,13 @@ class CubeList:
 
     # KL TODO Better way to make an exisitng RDD empty. This seems to be the fastest for now
     self.rdd = self.sc.parallelize("")
+
+  def getData(self, zidx_list):
+    """Return cubes of data"""
+
+    zidx_list = zidx_list
+    def func1(x):
+      if x[0] in zidx_list:
+        return x
+
+    return self.rdd.map(func1).toLocalIterator()
