@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import numpy as np
 from operator import itemgetter
 
-import ocplib
+from ocplib import MortonXYZ, XYZMorton
 from params import Params
-from urlmethods import postHDF5
+from urlmethods import postHDF5, getHDF5
 
 class CubeList:
 
@@ -55,7 +56,7 @@ class CubeList:
     # KL TODO combine cubes together to form large cube
     
     for ((zidx,post_data), index) in sorted_list:
-      [x, y, z] = ocplib.MortonXYZ(zidx)
+      [x, y, z] = MortonXYZ(zidx)
 
       # Caculate the args and post the request
       self.p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
@@ -69,7 +70,7 @@ class CubeList:
 
     for sorted_list in iterator:
       for ((zidx,post_data), index) in sorted_list:
-        [x, y, z] = ocplib.MortonXYZ(zidx)
+        [x, y, z] = MortonXYZ(zidx)
 
         # Caculate the args and post the request
         self.p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
@@ -87,9 +88,21 @@ class CubeList:
   def getData(self, zidx_list):
     """Return cubes of data"""
 
-    zidx_list = zidx_list
-    def func1(x):
-      if x[0] in zidx_list:
-        return x
-
-    return self.rdd.map(func1).toLocalIterator()
+    zidx_rdd = self.sc.parallelize(zidx_list).keyBy(lambda x : x)
+    
+    def getwrapper((key,cube)):
+      if cube is None:
+        [x,y,z] = MortonXYZ(key)
+        p = Params()
+        p.token = 'blaze'
+        p.channels = ['image']
+        p.resolution = 0
+        p.channel_type = 'image'
+        p.datatype = 'uint8'
+        p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
+        return (key, getHDF5(p))
+      else:
+        return (key, cube)
+    
+    # KL TODO This is slow. Need to identify ways to make it go faster
+    return zidx_rdd.leftOuterJoin(self.rdd).values().map(getwrapper).toLocalIterator()

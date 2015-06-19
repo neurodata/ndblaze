@@ -66,7 +66,8 @@ def getData(webargs):
   lowxyz = MortonXYZ(zidx_list[0])
 
   cube_rdd = cube_map.getCubeRdd(token, channel_name, res)
-  for zidx,cube_data in cube_rdd.getData(zidx_list):
+  iterable = cube_rdd.getData(zidx_list)
+  for zidx,cube_data in iterable:
     curxyz = MortonXYZ(zidx)
     offset = map(mul, map(sub, curxyz, lowxyz), cube_data.shape[::-1])
     end = map(add, offset, cube_data.shape[::-1])
