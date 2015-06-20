@@ -13,16 +13,13 @@
 # limitations under the License.
 
 import re
-
+import logging
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import View
 
 from extractcube import postData, getData
-
-import logging
-
 
 class BlazeView(View):
 
@@ -31,7 +28,7 @@ class BlazeView(View):
     try:
       return HttpResponse(getData(webargs), content_type="product/hdf5")
     except Exception, e:
-      return HTTPResponseBadRequest()
+      return HttpResponseBadRequest()
 
   def post(self, request, webargs):
     """RESTful URL for posting data"""

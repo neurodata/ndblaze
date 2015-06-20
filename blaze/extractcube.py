@@ -22,7 +22,7 @@ from operator import div, mul, add, sub, mod
 #from blazecontext import BlazeContext
 from blaze import cube_map
 from ocplib import XYZMorton, MortonXYZ
-
+from dataset import Dataset
 
 def getData(webargs):
   """Return a region of cutout"""
@@ -35,11 +35,15 @@ def getData(webargs):
   except Exception, e:
     print "Wrong arguments"
     raise
- 
-  # KL TODO Load these from projinfo or a local database
-  [zimagesz, yimagesz, ximagesz] = [10000, 10000, 100]
-  [xcubedim, ycubedim, zcubedim] = cubedim = [128, 128, 16]
-  [xoffset, yoffset, zoffset] = [0, 0, 0]
+  
+  # Fetaching the info from OCP backend
+  ds = Dataset(token)
+  ds.getChannelObj(channel_name)
+  [zimagesz, yimagesz, ximagesz] = ds.imagesz[res]
+  [xcubedim, ycubedim, zcubedim] = cubedim = ds.cubedim[res]
+  [xoffset, yoffset, zoffset] = ds.offset[res]
+
+  # KL TODO Check the bounds here
 
   # Calculating the corner and dimension
   corner = [x1, y1, z1]
@@ -129,15 +133,21 @@ def postData(webargs, post_data):
 
     # KL TODO Make so that we take in multiple channels
     voxarray = h5f.get(channel_name)['CUTOUT'].value
-    # Not used for now
+    # KL TODO check if this matches with backend
     h5_datatype = h5f.get(channel_name)['DATATYPE'].value[0]
     h5_channeltype = h5f.get(channel_name)['CHANNELTYPE'].value[0]
     
-    # KL TODO Get this via projinfo from OCP
-    [zimagesz, yimagesz, ximagesz] = [10000, 10000, 100]
+    # Fetaching the info from OCP backend
+    ds = Dataset(token)
+    ds.getChannelObj(channel_name)
+    [zimagesz, yimagesz, ximagesz] = ds.imagesz[res]
+    [xcubedim, ycubedim, zcubedim] = cubedim = ds.cubedim[res]
+    [xoffset, yoffset, zoffset] = ds.offset[res]
+    
+    # KL TODO Check the bounds here
+    
+    # Size of the posted data
     [zvoxarray, yvoxarray, xvoxarray] = voxarray.shape
-    [xcubedim, ycubedim, zcubedim] = cubedim = [128, 128, 16]
-    [xoffset, yoffset, zoffset] = [0, 0, 0]
 
     cube_list = []
     for z in range(z1, z2, zcubedim):
@@ -158,4 +168,3 @@ def postData(webargs, post_data):
    
     cube_rdd = cube_map.getCubeRdd(token, channel_name, res)
     cube_rdd.insertData(cube_list)
-    print "Testing"
