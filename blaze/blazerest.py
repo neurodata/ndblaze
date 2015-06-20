@@ -50,7 +50,7 @@ def getData(webargs):
   dim = map(sub, [x2,y2,z2], corner)
 
   # Round to the nearest largest cube in all dimensions
-  [zstart, ystart, xstart] = start = map(div, corner, cubedim)
+  [xstart, ystart, zstart] = start = map(div, corner, cubedim)
 
   znumcubes = (corner[2]+dim[2]+zcubedim-1)/zcubedim - zstart
   ynumcubes = (corner[1]+dim[1]+ycubedim-1)/ycubedim - ystart
@@ -145,25 +145,36 @@ def postData(webargs, post_data):
     
     # KL TODO Check the bounds here
     
-    # Size of the posted data
-    [zvoxarray, yvoxarray, xvoxarray] = voxarray.shape
+    import pdb; pdb.set_trace()
+    # Calculating the corner and dimension
+    corner = [x1, y1, z1]
+    dim = voxarray.shape[::-1]
+
+    # Round to the nearest largest cube in all dimensions
+    [xstart, ystart, zstart] = start = map(div, corner, cubedim)
+
+    znumcubes = (corner[2]+dim[2]+zcubedim-1)/zcubedim - zstart
+    ynumcubes = (corner[1]+dim[1]+ycubedim-1)/ycubedim - ystart
+    xnumcubes = (corner[0]+dim[0]+xcubedim-1)/xcubedim - xstart
+    numcubes = [xnumcubes, ynumcubes, znumcubes]
+    offset = map(mod, corner, cubedim)
+
+    data_buffer = np.zeros(map(mul, numcubes, cubedim)[::-1], dtype=voxarray.dtype)
+    end = map(add, offset, dim)
+    data_buffer[offset[2]:end[2], offset[1]:end[1], offset[0]:end[0]] = voxarray
 
     cube_list = []
-    for z in range(z1, z2, zcubedim):
-      for y in range(y1, y2, ycubedim):
-        for x in range(x1, x2, xcubedim):
-          zidx = XYZMorton([(x-xoffset)/xcubedim, (y-yoffset)/ycubedim, (z-zoffset)/zcubedim])
+    for z in range(znumcubes):
+      for y in range(ynumcubes):
+        for x in range(xnumcubes):
+          zidx = XYZMorton(map(add, start, [x,y,z]))
          
           # Parameters in the cube slab
-          xmin = x-x1 
-          ymin = y-y1
-          zmin = z-z1
-          xmax = min(xvoxarray, xmin+xcubedim)
-          ymax = min(yvoxarray, ymin+ycubedim)
-          zmax = min(zvoxarray, zmin+zcubedim)
+          index = map(mul, cubedim, [x,y,z])
+          end = map(add, index, cubedim)
 
-          cube_data = voxarray[zmin:zmax, ymin:ymax, xmin:xmax]
-          cube_list.append((zidx,cube_data))
+          cube_data = data_buffer[index[2]:end[2], index[1]:end[1], index[0]:end[0]]
+          cube_list.append((zidx, cube_data))
    
     channel_rdd = rdd_map.getBlazeRdd(token, channel_name, res)
     channel_rdd.insertData(cube_list)
