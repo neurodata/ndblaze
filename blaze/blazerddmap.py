@@ -12,22 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from cubelist import CubeList
+from blazerdd import BlazeRdd
 
-class CubeMap:
+class BlazeRddMap:
 
   def __init__(self, sparkContext):
-    """Create a cube map"""
+    """Create a RDD map"""
    
     self.sc = sparkContext
-    self.cube_map = {}
+    self.rdd_map = {}
 
-  def getCubeRdd(self, token, channel_name, resolution):
+  def getBlazeRdd(self, token, channel_name, resolution):
 
     key = (token,channel_name,resolution)
-    if key in self.cube_map:
+    if key in self.rdd_map:
       pass
     else:
-      self.cube_map[key] = CubeList(self.sc, token, channel_name, resolution)
+      self.rdd_map[key] = BlazeRdd(self.sc, token, channel_name, resolution)
 
-    return self.cube_map[key]
+    return self.rdd_map[key]

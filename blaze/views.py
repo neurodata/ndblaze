@@ -19,7 +19,7 @@ from django.http import HttpResponse, HttpResponseNotFound, HttpResponseBadReque
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import View
 
-from extractcube import postData, getData
+from blazerest import postData, getData
 
 class BlazeView(View):
 

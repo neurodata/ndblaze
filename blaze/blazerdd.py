@@ -19,7 +19,7 @@ from ocplib import MortonXYZ, XYZMorton
 from params import Params
 from urlmethods import postHDF5, getHDF5
 
-class CubeList:
+class BlazeRdd:
 
   def __init__(self, sparkContext, token, channel_name, res):
     """Create an empty rdd"""

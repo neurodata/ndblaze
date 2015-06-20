@@ -20,7 +20,7 @@ import numpy as np
 from operator import div, mul, add, sub, mod
 
 #from blazecontext import BlazeContext
-from blaze import cube_map
+from blaze import rdd_map
 from ocplib import XYZMorton, MortonXYZ
 from dataset import Dataset
 
@@ -69,9 +69,8 @@ def getData(webargs):
   zidx_list.sort()
   lowxyz = MortonXYZ(zidx_list[0])
 
-  cube_rdd = cube_map.getCubeRdd(token, channel_name, res)
-  iterable = cube_rdd.getData(zidx_list)
-  for zidx,cube_data in iterable:
+  channel_rdd = rdd_map.getBlazeRdd(token, channel_name, res)
+  for zidx,cube_data in channel_rdd.getData(zidx_list):
     curxyz = MortonXYZ(zidx)
     offset = map(mul, map(sub, curxyz, lowxyz), cube_data.shape[::-1])
     end = map(add, offset, cube_data.shape[::-1])
@@ -166,5 +165,5 @@ def postData(webargs, post_data):
           cube_data = voxarray[zmin:zmax, ymin:ymax, xmin:xmax]
           cube_list.append((zidx,cube_data))
    
-    cube_rdd = cube_map.getCubeRdd(token, channel_name, res)
-    cube_rdd.insertData(cube_list)
+    channel_rdd = rdd_map.getBlazeRdd(token, channel_name, res)
+    channel_rdd.insertData(cube_list)

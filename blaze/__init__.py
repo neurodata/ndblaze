@@ -1,5 +1,5 @@
 from blazecontext import BlazeContext
-from cubemap import CubeMap
+from blazerddmap import BlazeRddMap
 
 blazecontext = BlazeContext()
-cube_map = CubeMap(blazecontext.sc)
+rdd_map = BlazeRddMap(blazecontext.sc)
