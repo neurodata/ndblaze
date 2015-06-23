@@ -33,12 +33,15 @@ class BlazeRdd:
   def insertData(self, cube_list):
 
     # Inserting data in the rdd
+    import time
+    start = time.time()
     self.rdd = self.rdd.union(self.sc.parallelize(cube_list))
+    print time.time()-start
 
     # KL TODO trigger for inserting data under memory pressure
-    if self.rdd.count() >= 5:
-      #self.postData()
-      self.flushData()
+    #if self.rdd.count() >= 100:
+      ##self.postData()
+      #self.flushData()
 
   def postData(self):
     """Write a blob of data sequentially"""

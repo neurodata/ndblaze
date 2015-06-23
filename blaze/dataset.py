@@ -18,15 +18,24 @@ from django.conf import settings
 SITE_HOST = settings.SITE_HOST
 
 from ocpvariables import OCP_scalingtoint, ZSLICES, ISOTROPIC
+from blazedb import BlazeDB
 
 class Dataset:
 
   def __init__(self, token):
     """Create a new dataset"""
 
+    self.db = BlazeDB()
     self.token = token
     self.channel_list = []
-    self.fetchDataset()
+    
+    try:
+      self.db.getDataset(self)
+    except Exception:
+      self.fetchDataset()
+      self.db.addDataset(self)
+      self.db.getDataset(self)
+    
     self.populateDataset()
     
   def fetchDataset (self):
@@ -42,7 +51,7 @@ class Dataset:
     self.starttime, self.endtime = info['dataset']['timerange']
 
     for channel_name in info['channels'].keys():
-      self.channel_list.append(Channel(channel_name, info['channels'][channel_name]['channel_type'], info['channels'][channel_name]['datatype'], *info['channels'][channel_name]['windowrange']))
+      self.channel_list.append(Channel(channel_name, self.token, info['channels'][channel_name]['channel_type'], info['channels'][channel_name]['datatype'], *info['channels'][channel_name]['windowrange']))
 
 
   def populateDataset (self):
@@ -122,10 +131,11 @@ class Dataset:
 
 class Channel:
 
-  def __init__(self, channel_name, channel_type, channel_datatype, startwindow, endwindow):
+  def __init__(self, channel_name, dataset, channel_type, channel_datatype, startwindow, endwindow):
     """Intialize the channel"""
 
     self.channel_name = channel_name
+    self.dataset = dataset
     self.channel_type = channel_type
     self.channel_datatype = channel_datatype
     self.startwindow = startwindow
