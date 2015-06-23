@@ -16,8 +16,14 @@
 class Params:
   """Arguments Class"""
   
-  def __init__ (self):
-    self.token = ""
-    self.resolution = 0
-    self.channels = []
-    self.args = None
+  def __init__ (self, ds, ch, res):
+    self.token = ds.token
+    self.resolution = res
+    self.channels = [ch.getChannelName()]
+    self.channel_type = ch.getChannelType()
+    self.datatype = ch.getDataType()
+    self.cubedim = ds.cubedim[res]
+
+  def __call__ (self):
+
+    return self

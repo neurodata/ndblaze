@@ -34,8 +34,6 @@ class BlazeView(View):
     """RESTful URL for posting data"""
 
     try:
-      #m = re.match(r"(\w+)/(?P<channel>[\w+,/-]+)?/?hdf5/([\w,/-]+)$", webargs)
-      #[token, channel, service, cutout_args] = [i for i in m.groups()]
       postData(webargs, request.body)
       return HttpResponse("Successful", content_type="text/html")
 

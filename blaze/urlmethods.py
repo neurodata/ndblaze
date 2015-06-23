@@ -20,6 +20,8 @@ import zlib
 import numpy as np
 from django.conf import settings 
 
+from ocplib import MortonXYZ, XYZMorton
+
 SITE_HOST = settings.SITE_HOST
 
 def postNPZ(p, post_data):
@@ -40,11 +42,15 @@ def postNPZ(p, post_data):
     print "Error. {}".format(e)
     raise 
 
-def postHDF5 (p, post_data):
+def postHDF5 ((p, (zidx, post_data))):
   """Post data using the hdf5"""
 
+  [x, y, z] = MortonXYZ(zidx)
+  [xcubedim, ycubedim, zcubedim] = p.cubedim
+  post_args = (x*xcubedim, (x+1)*xcubedim, y*ycubedim, (y+1)*ycubedim, z*zcubedim, (z+1)*zcubedim)
+  
   # Build the url and then create a hdf5 object
-  url = 'http://{}/ca/{}/{}/hdf5/{}/{},{}/{},{}/{},{}/'.format ( SITE_HOST, p.token, ','.join(p.channels), p.resolution, *p.args )
+  url = 'http://{}/ca/{}/{}/hdf5/{}/{},{}/{},{}/{},{}/'.format(SITE_HOST, p.token, ','.join(p.channels), p.resolution, *post_args)
 
   tmpfile = tempfile.NamedTemporaryFile ()
   fh5out = h5py.File ( tmpfile.name )
@@ -60,15 +66,18 @@ def postHDF5 (p, post_data):
     # Build a post request
     req = urllib2.Request(url,tmpfile.read())
     response = urllib2.urlopen(req)
-    return response
   except urllib2.HTTPError,e:
-    return e
+    pass
 
-def getHDF5 (p):
-  """Get data using npz. Returns a hdf5 file"""
+def getHDF5 ((zidx, p)):
+  """Get data using hdf5 service. Returns a voxarray"""
+  
+  [x, y, z] = MortonXYZ(zidx)
+  [xcubedim, ycubedim, zcubedim] = p.cubedim
+  post_args = (x*xcubedim, (x+1)*xcubedim, y*ycubedim, (y+1)*ycubedim, z*zcubedim, (z+1)*zcubedim)
   
   # Build the url and then create a hdf5 object
-  url = 'http://{}/ca/{}/{}/hdf5/{}/{},{}/{},{}/{},{}/'.format(SITE_HOST, p.token, ','.join(p.channels), p.resolution, *p.args)
+  url = 'http://{}/ca/{}/{}/hdf5/{}/{},{}/{},{}/{},{}/'.format(SITE_HOST, p.token, ','.join(p.channels), p.resolution, *post_args)
 
   # Get the image back
   f = urllib2.urlopen (url)
@@ -77,7 +86,8 @@ def getHDF5 (p):
   tmpfile.seek(0)
   h5f = h5py.File(tmpfile.name, driver='core', backing_store=False)
   
-  return h5f.get(p.channels[0])['CUTOUT'].value
+  return (zidx, h5f.get(p.channels[0])['CUTOUT'].value)
+
 
 def postURL ( url, f ):
 

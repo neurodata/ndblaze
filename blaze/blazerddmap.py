@@ -22,12 +22,12 @@ class BlazeRddMap:
     self.sc = sparkContext
     self.rdd_map = {}
 
-  def getBlazeRdd(self, token, channel_name, resolution):
+  def getBlazeRdd(self, ds, ch, res):
 
-    key = (token,channel_name,resolution)
+    key = (ds.token, ch.getChannelName(), res)
     if key in self.rdd_map:
       pass
     else:
-      self.rdd_map[key] = BlazeRdd(self.sc, token, channel_name, resolution)
+      self.rdd_map[key] = BlazeRdd(self.sc, ds, ch, res)
 
     return self.rdd_map[key]

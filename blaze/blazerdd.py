@@ -16,22 +16,19 @@ import numpy as np
 from operator import itemgetter
 
 from ocplib import MortonXYZ, XYZMorton
-from params import Params
 from urlmethods import postHDF5, getHDF5
+from params import Params
 
 class BlazeRdd:
 
-  def __init__(self, sparkContext, token, channel_name, res):
+  def __init__(self, sparkContext, ds, ch, res):
     """Create an empty rdd"""
     
     self.sc = sparkContext
     self.rdd = self.sc.parallelize("")
-    self.p = Params()
-    self.p.token = token
-    self.p.channels = [channel_name]
-    self.p.resolution = res
-    self.p.channel_type = 'image'
-    self.p.datatype = 'uint8'
+    self.ds = ds
+    self.ch = ch
+    self.res = res
 
   def insertData(self, cube_list):
 
@@ -64,19 +61,27 @@ class BlazeRdd:
       postHDF5(self.p, post_data)
 
   def flushData(self):
-    """Remove all the data from rdd, biggest list first"""
+    """Remove all the data from rdd."""
 
-    iterator = self.rdd.sortByKey().zipWithIndex().groupBy(lambda ((x,y),z):x-z).values().map(lambda x: list(x)).toLocalIterator()
+    import time
+    p = Params(self.ds, self.ch, self.res)
 
-    for sorted_list in iterator:
-      for ((zidx,post_data), index) in sorted_list:
-        [x, y, z] = MortonXYZ(zidx)
+    #start = time.time()
+    #sorted_list2 = self.rdd.sortByKey().map(lambda x: (p,x)).collect()
+    #print "2nd TIME:", time.time()-start
+    
+    # Sort the list according to sequential list
+    #start = time.time()
+    #sorted_list2 = self.rdd.sortByKey().zipWithIndex().groupBy(lambda ((x,y),z):x-z).values().map(lambda x: list(x)).keys().map(lambda x: (p,x[0])).collect()
+    #print "1st TIME:", time.time()-start
 
-        # Caculate the args and post the request
-        self.p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
-        print "Posting", zidx
-        postHDF5(self.p, post_data)
+    # Post the url
+    start = time.time()
+    sorted_list = self.rdd.sortByKey().combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda x: (p,x))
+    sorted_list.map(postHDF5).collect()
+    print "TIME:", time.time()-start
 
+    # Clear out the RDD
     self.emptyRDD()
 
   def emptyRDD(self):
@@ -88,21 +93,14 @@ class BlazeRdd:
   def getData(self, zidx_list):
     """Return cubes of data"""
 
-    zidx_rdd = self.sc.parallelize(zidx_list).keyBy(lambda x : x)
-    
-    def getwrapper((key,cube)):
-      if cube is None:
-        [x,y,z] = MortonXYZ(key)
-        p = Params()
-        p.token = 'blaze'
-        p.channels = ['image']
-        p.resolution = 0
-        p.channel_type = 'image'
-        p.datatype = 'uint8'
-        p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
-        return (key, getHDF5(p))
-      else:
-        return (key, cube)
+    import time
+    start = time.time()
+    p = Params(self.ds, self.ch, self.res)
+    zidx_rdd = self.sc.parallelize(zidx_list).map(lambda x : (x,p)).map(getHDF5)    
+    test = self.rdd.union(zidx_rdd).sortByKey().combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y))
+    test.collect()
+    print "TIME:",time.time()-start
     
     # KL TODO This is slow. Need to identify ways to make it go faster
-    return zidx_rdd.leftOuterJoin(self.rdd).values().map(getwrapper).toLocalIterator()
+    #return_list = zidx_rdd.leftOuterJoin(self.rdd).values().map(lambda x: (p,x)).map(getHDF5)
+    return test.toLocalIterator()

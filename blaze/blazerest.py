@@ -38,7 +38,7 @@ def getData(webargs):
   
   # Fetaching the info from OCP backend
   ds = Dataset(token)
-  ds.getChannelObj(channel_name)
+  ch = ds.getChannelObj(channel_name)
   [zimagesz, yimagesz, ximagesz] = ds.imagesz[res]
   [xcubedim, ycubedim, zcubedim] = cubedim = ds.cubedim[res]
   [xoffset, yoffset, zoffset] = ds.offset[res]
@@ -69,7 +69,7 @@ def getData(webargs):
   zidx_list.sort()
   lowxyz = MortonXYZ(zidx_list[0])
 
-  channel_rdd = rdd_map.getBlazeRdd(token, channel_name, res)
+  channel_rdd = rdd_map.getBlazeRdd(ds, ch, res)
   for zidx,cube_data in channel_rdd.getData(zidx_list):
     curxyz = MortonXYZ(zidx)
     offset = map(mul, map(sub, curxyz, lowxyz), cube_data.shape[::-1])
@@ -78,6 +78,7 @@ def getData(webargs):
     voxarray[offset[2]:end[2], offset[1]:end[1], offset[0]:end[0]] = cube_data[:]
 
   # trim the data
+  import pdb; pdb.set_trace()
   if map(mod, dim, cubedim) == [0,0,0] and map(mod, corner, cubedim) == [0,0,0]:
     pass
   else:
@@ -138,14 +139,13 @@ def postData(webargs, post_data):
     
     # Fetaching the info from OCP backend
     ds = Dataset(token)
-    ds.getChannelObj(channel_name)
+    ch = ds.getChannelObj(channel_name)
     [zimagesz, yimagesz, ximagesz] = ds.imagesz[res]
     [xcubedim, ycubedim, zcubedim] = cubedim = ds.cubedim[res]
     [xoffset, yoffset, zoffset] = ds.offset[res]
     
     # KL TODO Check the bounds here
     
-    import pdb; pdb.set_trace()
     # Calculating the corner and dimension
     corner = [x1, y1, z1]
     dim = voxarray.shape[::-1]
@@ -176,5 +176,5 @@ def postData(webargs, post_data):
           cube_data = data_buffer[index[2]:end[2], index[1]:end[1], index[0]:end[0]]
           cube_list.append((zidx, cube_data))
    
-    channel_rdd = rdd_map.getBlazeRdd(token, channel_name, res)
+    channel_rdd = rdd_map.getBlazeRdd(ds, ch, res)
     channel_rdd.insertData(cube_list)

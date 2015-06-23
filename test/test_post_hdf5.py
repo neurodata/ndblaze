@@ -14,6 +14,7 @@
 
 import random
 import numpy as np
+import random
 
 import settings
 from blaze import ocplib
@@ -33,6 +34,33 @@ class Test_Hdf5:
   def test_simple(self):
     """Test a simple post"""
 
+  # Posting zindex 0
+  [x,y,z] = ocplib.MortonXYZ(0)
+  p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
+  image_data = np.ones([1,16,128,128], dtype=np.uint8) * 50
+  response = postHDF5(p, image_data)
+  # Posting zindex 0
+  [x,y,z] = ocplib.MortonXYZ(0)
+  p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
+  image_data = np.zeros([1,16,128,128], dtype=np.uint8)
+  image_data[0,0,100,100] = 2
+  response = postHDF5(p, image_data)
+  # Posting zindex 0
+  [x,y,z] = ocplib.MortonXYZ(0)
+  p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
+  image_data = np.zeros([1,16,128,128], dtype=np.uint8)
+  image_data[0,0,100,100] = 1
+  response = postHDF5(p, image_data)
+   
+  zidx_list = range(0,100)
+  random.shuffle(zidx_list)
+  for i in zidx_list:
+    [x,y,z] = ocplib.MortonXYZ(i)
+    p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
+    image_data = np.ones([1,16,128,128], dtype=np.uint8) * random.randint(0,255)
+    response = postHDF5(p, image_data)
+  
+  pass
   # Posting zindex 0
   [x,y,z] = ocplib.MortonXYZ(0)
   p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
