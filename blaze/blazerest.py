@@ -15,8 +15,8 @@
 import re
 import h5py
 import tempfile
-from contextlib import closing
 import numpy as np
+from contextlib import closing
 from operator import div, mul, add, sub, mod
 
 #from blazecontext import BlazeContext
@@ -24,7 +24,7 @@ from blaze import rdd_map
 from ocplib import XYZMorton, MortonXYZ
 from dataset import Dataset
 
-def getData(webargs):
+def getHDF5Data(webargs):
   """Return a region of cutout"""
 
   try:
@@ -78,7 +78,6 @@ def getData(webargs):
     voxarray[offset[2]:end[2], offset[1]:end[1], offset[0]:end[0]] = cube_data[:]
 
   # trim the data
-  import pdb; pdb.set_trace()
   if map(mod, dim, cubedim) == [0,0,0] and map(mod, corner, cubedim) == [0,0,0]:
     pass
   else:
@@ -105,9 +104,9 @@ def getData(webargs):
   tmpfile.seek(0)
 
   return tmpfile.read()
-      
 
-def postData(webargs, post_data):
+
+def postHDF5Data(webargs, post_data):
   """Accept a posted region of cutout"""
 
   try:
@@ -118,6 +117,14 @@ def postData(webargs, post_data):
   except Exception, e:
     print "Wrong arguments"
     raise
+
+  ## testing
+  #ds = Dataset(token)
+  #ch = ds.getChannelObj(channel_name)
+  #channel_rdd = rdd_map.getBlazeRdd(ds, ch, res)
+  #channel_rdd.insertData(post_data)
+  ## testing ends
+
 
   with closing (tempfile.NamedTemporaryFile()) as tmpfile:
     
@@ -132,12 +139,16 @@ def postData(webargs, post_data):
       raise
 
     # KL TODO Make so that we take in multiple channels
+    import time
+    start_time = time.time()
     voxarray = h5f.get(channel_name)['CUTOUT'].value
+    print "HDF5:", time.time()-start_time
     # KL TODO check if this matches with backend
     h5_datatype = h5f.get(channel_name)['DATATYPE'].value[0]
     h5_channeltype = h5f.get(channel_name)['CHANNELTYPE'].value[0]
     
     # Fetaching the info from OCP backend
+    start_time = time.time()
     ds = Dataset(token)
     ch = ds.getChannelObj(channel_name)
     [zimagesz, yimagesz, ximagesz] = ds.imagesz[res]
@@ -175,6 +186,15 @@ def postData(webargs, post_data):
 
           cube_data = data_buffer[index[2]:end[2], index[1]:end[1], index[0]:end[0]]
           cube_list.append((zidx, cube_data))
-   
+    
+    print "Preprocessing:", time.time()-start_time
     channel_rdd = rdd_map.getBlazeRdd(ds, ch, res)
     channel_rdd.insertData(cube_list)
+
+  def CeleryWorker(self):
+
+    try:
+      for channel_rdd in rdd_map.getAll():
+        channel_rdd.flushData()
+    except Exception, e:
+      raise

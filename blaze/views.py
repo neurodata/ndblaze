@@ -19,14 +19,14 @@ from django.http import HttpResponse, HttpResponseNotFound, HttpResponseBadReque
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import View
 
-from blazerest import postData, getData
+from blazerest import postHDF5Data, getHDF5Data
 
 class BlazeView(View):
 
   def get(self, request, webargs):
 
     try:
-      return HttpResponse(getData(webargs), content_type="product/hdf5")
+      return HttpResponse(getHDF5Data(webargs), content_type="product/hdf5")
     except Exception, e:
       return HttpResponseBadRequest()
 
@@ -34,7 +34,10 @@ class BlazeView(View):
     """RESTful URL for posting data"""
 
     try:
-      postData(webargs, request.body)
+      import time
+      start = time.time()
+      postHDF5Data(webargs, request.body)
+      print "FINAL", time.time()-start
       return HttpResponse("Successful", content_type="text/html")
 
     except Exception, e:

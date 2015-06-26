@@ -27,8 +27,8 @@ CELERYD_CONCURRENCY = 1
 
 CELERYBEAT_SCHEDULE = {
   'add-every-30-seconds': {
-  'task': 'tasks.flushData',
-  'schedule': timedelta(seconds=60),
+  'task': 'tasks.flushDataTask',
+  'schedule': timedelta(seconds=30),
   'args': ()
   },
 }

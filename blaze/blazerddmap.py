@@ -23,6 +23,7 @@ class BlazeRddMap:
     self.rdd_map = {}
 
   def getBlazeRdd(self, ds, ch, res):
+    """Get the specific RDD from the dictionary"""
 
     key = (ds.token, ch.getChannelName(), res)
     if key in self.rdd_map:
@@ -31,3 +32,8 @@ class BlazeRddMap:
       self.rdd_map[key] = BlazeRdd(self.sc, ds, ch, res)
 
     return self.rdd_map[key]
+
+  def getAll(self):
+    """Return all RDD's in the dictionary"""
+
+    return self.rdd_map.values()

@@ -20,6 +20,8 @@ import numpy as np
 import tempfile
 import h5py
 import urllib2
+import zlib
+import cStringIO
 
 sys.path += [os.path.abspath('..')]
 import ocpblaze.settings
@@ -31,10 +33,11 @@ from params import Params
 p = Params()
 p.token = "blaze"
 p.resolution = 0
-p.channels = ['image']
+p.channels = ['anno']
 p.window = [0,0]
-p.channel_type = "image"
-p.datatype = "uint8"
+p.channel_type = "annotation"
+p.datatype = "uint32"
+SIZE = 4096*2
 
 def Benchmark(number_iterations):
   """Run the Benchmark."""
@@ -43,12 +46,13 @@ def Benchmark(number_iterations):
   random.shuffle(zidx_list)
   for i in zidx_list:
     [x,y,z] = MortonXYZ(i)
-    p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
-    image_data = np.ones([1,16,128,128], dtype=np.uint8) * random.randint(0,255)
+    p.args = (x*SIZE, (x+1)*SIZE, y*SIZE, (y+1)*SIZE, z*16, (z+1)*16)
+    image_data = np.ones([1,16,SIZE,SIZE], dtype=np.uint32) * random.randint(0,255)
     response = PostHDF5(p, image_data)
+    #response = PostNPZ(p, image_data)
 
-def PostHDF5 (p, post_data, time=False):
-  """Post data using the hdf5"""
+def PostHDF5 (p, post_data):
+  """Post data using the hdf5 interface"""
 
   # Build the url and then create a hdf5 object
   url = 'http://{}/{}/{}/hdf5/{}/{},{}/{},{}/{},{}/'.format(SITE_HOST, p.token, ','.join(p.channels), p.resolution, *p.args)
@@ -65,7 +69,28 @@ def PostHDF5 (p, post_data, time=False):
   
   try:
     # Build a post request
-    req = urllib2.Request(url,tmpfile.read())
+    req = urllib2.Request(url, tmpfile.read())
+    import time
+    start = time.time()
+    response = urllib2.urlopen(req)
+    print time.time()-start
+    return response
+  except urllib2.HTTPError,e:
+    return e
+
+def PostNPZ (p, post_data):
+  """Post data using the npz interface"""
+  
+  # Build the url and then create a npz object
+  url = 'http://{}/{}/{}/npz/{}/{},{}/{},{}/{},{}/'.format(SITE_HOST, p.token, ','.join(p.channels), p.resolution, *p.args)
+
+  fileobj = cStringIO.StringIO ()
+  np.save (fileobj, post_data)
+  cdz = zlib.compress (fileobj.getvalue())
+  
+  try:
+    # Build a post request
+    req = urllib2.Request(url, cdz)
     response = urllib2.urlopen(req)
     return response
   except urllib2.HTTPError,e:
