@@ -18,6 +18,12 @@ from operator import itemgetter
 from ocplib import MortonXYZ, XYZMorton
 from urlmethods import postHDF5, getHDF5
 from params import Params
+from dataset import Dataset
+
+from contextlib import closing
+import tempfile
+import h5py
+from operator import div, mul, add, sub, mod
 
 class BlazeRdd:
 
@@ -32,16 +38,73 @@ class BlazeRdd:
 
   def insertData(self, cube_list):
 
+
+    def breakCubes((token,channel_name,res,x1,x2,y1,y2,z1,z2), hdf5_data):
+
+      with closing (tempfile.NamedTemporaryFile()) as tmpfile:
+        
+        try:
+          # Opening the hdf5 file
+          tmpfile.write(hdf5_data)
+          tmpfile.seek(0)
+          h5f = h5py.File(tmpfile.name, driver='core', backing_store=False)
+        
+        except Exception, e:
+          print "Error opening HDF5 file"
+          raise
+
+        voxarray = h5f.get(channel_name)['CUTOUT'].value
+       
+        # Fetaching the info from OCP backend
+        ds = Dataset(token)
+        [zimagesz, yimagesz, ximagesz] = [10000,10000,10000]
+        [xcubedim, ycubedim, zcubedim] = cubedim = [512,512,16]
+        [xoffset, yoffset, zoffset] = [0,0,0]
+        
+        # Calculating the corner and dimension
+        corner = [x1, y1, z1]
+        dim = voxarray.shape[::-1]
+        # Round to the nearest largest cube in all dimensions
+        [xstart, ystart, zstart] = start = map(div, corner, cubedim)
+
+        znumcubes = (corner[2]+dim[2]+zcubedim-1)/zcubedim - zstart
+        ynumcubes = (corner[1]+dim[1]+ycubedim-1)/ycubedim - ystart
+        xnumcubes = (corner[0]+dim[0]+xcubedim-1)/xcubedim - xstart
+        numcubes = [xnumcubes, ynumcubes, znumcubes]
+        offset = map(mod, corner, cubedim)
+
+        data_buffer = np.zeros(map(mul, numcubes, cubedim)[::-1], dtype=voxarray.dtype)
+        end = map(add, offset, dim)
+        data_buffer[offset[2]:end[2], offset[1]:end[1], offset[0]:end[0]] = voxarray
+
+        cube_list = []
+        for z in range(znumcubes):
+          for y in range(ynumcubes):
+            for x in range(xnumcubes):
+              zidx = XYZMorton(map(add, start, [x,y,z]))
+             
+              # Parameters in the cube slab
+              index = map(mul, cubedim, [x,y,z])
+              end = map(add, index, cubedim)
+
+              cube_data = data_buffer[index[2]:end[2], index[1]:end[1], index[0]:end[0]]
+              cube_list.append((zidx, cube_data))
+        
+        return cube_list[:]
+    
     # Inserting data in the rdd
     import time
+    #import pdb; pdb.set_trace()
     start = time.time()
-    self.rdd = self.rdd.union(self.sc.parallelize(cube_list))
-    print time.time()-start
+    temp_rdd = self.sc.parallelize(cube_list)
+    temp_rdd = temp_rdd.map(lambda (k,v): breakCubes(k,v)[:]).flatMap(lambda k: k)
+    #import pdb; pdb.set_trace()
+    #self.test = temp_rdd.collect()
+    print "FIRST", time.time()-start
+    start = time.time()
+    self.rdd = self.rdd.union(temp_rdd)
+    print "SECOND", time.time()-start
 
-    # KL TODO trigger for inserting data under memory pressure
-    #if self.rdd.count() >= 100:
-      ##self.postData()
-      #self.flushData()
 
   def postData(self):
     """Write a blob of data sequentially"""
@@ -81,8 +144,10 @@ class BlazeRdd:
     # Post the url
     start = time.time()
     sorted_list = self.rdd.sortByKey().combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda x: (p,x))
+    print "COMPUTE TIME:", time.time()-start
+    start = time.time()
     sorted_list.map(postHDF5).collect()
-    print "TIME:", time.time()-start
+    print "WRITE TIME:", time.time()-start
 
     # Clear out the RDD
     self.emptyRDD()

@@ -37,7 +37,7 @@ p.channels = ['anno']
 p.window = [0,0]
 p.channel_type = "annotation"
 p.datatype = "uint32"
-SIZE = 4096*2
+SIZE = 4096
 
 def Benchmark(number_iterations):
   """Run the Benchmark."""
@@ -50,6 +50,7 @@ def Benchmark(number_iterations):
     image_data = np.ones([1,16,SIZE,SIZE], dtype=np.uint32) * random.randint(0,255)
     response = PostHDF5(p, image_data)
     #response = PostNPZ(p, image_data)
+    image_data = None
 
 def PostHDF5 (p, post_data):
   """Post data using the hdf5 interface"""
@@ -74,6 +75,7 @@ def PostHDF5 (p, post_data):
     start = time.time()
     response = urllib2.urlopen(req)
     print time.time()-start
+    tmpfile.close()
     return response
   except urllib2.HTTPError,e:
     return e
