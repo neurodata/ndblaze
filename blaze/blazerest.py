@@ -19,8 +19,7 @@ import numpy as np
 from contextlib import closing
 from operator import div, mul, add, sub, mod
 
-#from blazecontext import BlazeContext
-from blaze import rdd_map
+from blazeredis import BlazeRedis
 from ocplib import XYZMorton, MortonXYZ
 from dataset import Dataset
 
@@ -118,14 +117,6 @@ def postHDF5Data(webargs, post_data):
     print "Wrong arguments"
     raise
 
-  ## testing
-  #ds = Dataset(token)
-  #ch = ds.getChannelObj(channel_name)
-  #channel_rdd = rdd_map.getBlazeRdd(ds, ch, res)
-  #channel_rdd.insertData(post_data)
-  ## testing ends
-
-
   with closing (tempfile.NamedTemporaryFile()) as tmpfile:
     
     try:
@@ -188,13 +179,11 @@ def postHDF5Data(webargs, post_data):
           cube_list.append((zidx, cube_data))
     
     print "Preprocessing:", time.time()-start_time
-    channel_rdd = rdd_map.getBlazeRdd(ds, ch, res)
-    channel_rdd.insertData(cube_list)
-
-  def CeleryWorker(self):
-
-    try:
-      for channel_rdd in rdd_map.getAll():
-        channel_rdd.flushData()
-    except Exception, e:
-      raise
+    #bredis = BlazeRedis()
+    from blazemem import BlazeMem
+    import pdb; pdb.set_trace()
+    bmem = BlazeMem()
+    start3 = time.time()
+    #bredis.writeData(ds, ch, cube_list)
+    bmem.writeData(ds, ch, cube_list)
+    print "Write:",time.time()-start3
