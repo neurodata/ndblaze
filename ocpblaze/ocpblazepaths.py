@@ -21,5 +21,6 @@ import os, sys
 OCPBLAZE_BASE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), ".." ))
 OCPBLAZE_OCPLIB_PATH = os.path.join(OCPBLAZE_BASE_PATH, "ocplib" )
 OCPBLAZE_UTIL_PATH = os.path.join(OCPBLAZE_BASE_PATH, "util" )
+OCPBLAZE_BLAZE_PATH = os.path.join(OCPBLAZE_BASE_PATH, "blaze" )
 
-sys.path += [ OCPBLAZE_OCPLIB_PATH, OCPBLAZE_UTIL_PATH ]
+sys.path += [ OCPBLAZE_OCPLIB_PATH, OCPBLAZE_UTIL_PATH, OCPBLAZE_BLAZE_PATH ]
