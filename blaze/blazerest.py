@@ -179,11 +179,7 @@ def postHDF5Data(webargs, post_data):
           cube_list.append((zidx, cube_data))
     
     print "Preprocessing:", time.time()-start_time
-    #bredis = BlazeRedis()
-    from blazemem import BlazeMem
-    import pdb; pdb.set_trace()
-    bmem = BlazeMem()
+    bredis = BlazeRedis()
     start3 = time.time()
-    #bredis.writeData(ds, ch, cube_list)
-    bmem.writeData(ds, ch, cube_list)
+    bredis.writeData(ds, ch, cube_list)
     print "Write:",time.time()-start3

@@ -14,6 +14,7 @@
 
 import redis
 import time
+import blosc
 
 class BlazeRedis:
 
@@ -30,13 +31,10 @@ class BlazeRedis:
 
     serial_time = 0
     for zidx,cube_data in cube_list:
-      key = "{}_{}_{}".format(ds.token, ch.getChannelName(),zidx) 
-      import msgpack
-      import msgpack_numpy as m
+      key = "{}_{}_{}".format(ds.token, ch.getChannelName(), zidx) 
       start = time.time()
-      #cube_data = msgpack.packb(cube_data, default=m.encode)
-      serial_time = serial_time + time.time()-start
-      self.pipe.set(key, cube_data)
+      serial_time += time.time()-start
+      self.pipe.set( key, blosc.pack_array(cube_data) )
 
     print "Serialization:", serial_time
     start = time.time()

@@ -37,19 +37,18 @@ p.channels = ['anno']
 p.window = [0,0]
 p.channel_type = "annotation"
 p.datatype = "uint32"
-SIZE = 1024*2
+SIZE = 1024
+ZSIZE = 108
 
-def Benchmark(number_iterations):
+def Benchmark(zidx):
   """Run the Benchmark."""
 
-  zidx_list = range(number_iterations)
-  random.shuffle(zidx_list)
-  for i in zidx_list:
-    [x,y,z] = MortonXYZ(i)
-    p.args = (x*SIZE, (x+1)*SIZE, y*SIZE, (y+1)*SIZE, z*16, (z+1)*16)
-    image_data = np.ones([1,16,SIZE,SIZE], dtype=np.uint32) * random.randint(0,255)
-    response = PostHDF5(p, image_data)
-    #response = PostNPZ(p, image_data)
+  i = zidx
+  [x,y,z] = MortonXYZ(i)
+  p.args = (x*SIZE, (x+1)*SIZE, y*SIZE, (y+1)*SIZE, z*ZSIZE, (z+1)*ZSIZE)
+  image_data = np.ones([1,16,SIZE,SIZE], dtype=np.uint32) * random.randint(0,255)
+  response = PostHDF5(p, image_data)
+  #response = PostNPZ(p, image_data)
 
 def PostHDF5 (p, post_data):
   """Post data using the hdf5 interface"""
@@ -102,14 +101,19 @@ def main():
   parser = argparse.ArgumentParser(description='Run the Benchmark script')
   parser.add_argument('host', action="store", help='HostName')
   parser.add_argument('number_iterations', action="store", type=int, help='Number of iterations')
+  parser.add_argument('number_processes', action="store", type=int, help='Number of processes')
 
   result = parser.parse_args()
 
   global SITE_HOST
   SITE_HOST = result.host
+  zidx_list = range(result.number_iterations)
+  random.shuffle(zidx_list)
   import time
+  from multiprocessing import Pool
+  pool = Pool(result.number_processes)
   start = time.time()
-  Benchmark(result.number_iterations)
+  pool.map(Benchmark, zidx_list)
   print time.time() - start
 
 if __name__ == '__main__':
