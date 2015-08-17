@@ -31,12 +31,14 @@ from blaze.ocplib import MortonXYZ
 from params import Params
 
 p = Params()
-p.token = "blaze"
+p.token = "blaze2"
 p.resolution = 0
 p.channels = ['anno']
 p.window = [0,0]
-p.channel_type = "annotation"
-p.datatype = "uint32"
+#p.channel_type = "annotation"
+p.channel_type = "image"
+#p.datatype = "uint32"
+p.datatype = "uint8"
 SIZE = 1024
 ZSIZE = 108
 
@@ -46,7 +48,7 @@ def Benchmark(zidx):
   i = zidx
   [x,y,z] = MortonXYZ(i)
   p.args = (x*SIZE, (x+1)*SIZE, y*SIZE, (y+1)*SIZE, z*ZSIZE, (z+1)*ZSIZE)
-  image_data = np.ones([1,16,SIZE,SIZE], dtype=np.uint32) * random.randint(0,255)
+  image_data = np.ones([1,16,SIZE,SIZE], dtype=np.uint8) * random.randint(0,255)
   response = PostHDF5(p, image_data)
   #response = PostNPZ(p, image_data)
 
