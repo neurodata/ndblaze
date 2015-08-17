@@ -24,6 +24,7 @@ from contextlib import closing
 import tempfile
 import h5py
 from operator import div, mul, add, sub, mod
+import blosc
 
 class BlazeRdd:
 
@@ -88,7 +89,7 @@ class BlazeRdd:
               end = map(add, index, cubedim)
 
               cube_data = data_buffer[index[2]:end[2], index[1]:end[1], index[0]:end[0]]
-              cube_list.append((zidx, cube_data))
+              cube_list.append((zidx, blosc.pack_array(cube_data)))
         
         return cube_list[:]
     
@@ -96,6 +97,7 @@ class BlazeRdd:
     import time
     #import pdb; pdb.set_trace()
     start = time.time()
+    import pdb; pdb.set_trace()
     temp_rdd = self.sc.parallelize(cube_list)
     temp_rdd = temp_rdd.map(lambda (k,v): breakCubes(k,v)[:]).flatMap(lambda k: k)
     #import pdb; pdb.set_trace()

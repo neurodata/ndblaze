@@ -37,7 +37,7 @@ p.channels = ['anno']
 p.window = [0,0]
 p.channel_type = "annotation"
 p.datatype = "uint32"
-SIZE = 4096
+SIZE = 512
 
 def Benchmark(number_iterations):
   """Run the Benchmark."""
