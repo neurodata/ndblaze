@@ -24,6 +24,8 @@ from blaze import rdd_map
 from ocplib import XYZMorton, MortonXYZ
 from dataset import Dataset
 
+import blosc
+
 def getHDF5Data(webargs):
   """Return a region of cutout"""
 
@@ -185,12 +187,76 @@ def postHDF5Data(webargs, post_data):
           end = map(add, index, cubedim)
 
           cube_data = data_buffer[index[2]:end[2], index[1]:end[1], index[0]:end[0]]
-          cube_list.append((zidx, cube_data))
+          cube_list.append((zidx, blosc.pack_array(cube_data)))
     
     print "Preprocessing:", time.time()-start_time
     channel_rdd = rdd_map.getBlazeRdd(ds, ch, res)
     channel_rdd.insertData(cube_list)
 
+def postBloscData(webargs, post_data):
+  """Accept a posted region of cutout"""
+
+  try:
+    # arguments of format token/channel/service/resolution/x,x/y,y/z,z/
+    m = re.match("(\w+)/(\w+)/(\w+)/(\d+)/(\d+),(\d+)/(\d+),(\d+)/(\d+),(\d+)/", webargs)
+    [token, channel_name, service] = [i for i in m.groups()[:3]]
+    [res, x1, x2, y1, y2, z1, z2] = [int(i) for i in m.groups()[3:]]
+  except Exception, e:
+    print "Wrong arguments"
+    raise
+
+
+    # KL TODO Make so that we take in multiple channels
+    import time
+    start_time = time.time()
+    voxarray = blosc.unpack_array(post_data)
+    print "blosc:", time.time()-start_time
+    # KL TODO check if this matches with backend
+    
+    # Fetaching the info from OCP backend
+    start_time = time.time()
+    ds = Dataset(token)
+    ch = ds.getChannelObj(channel_name)
+    [zimagesz, yimagesz, ximagesz] = ds.imagesz[res]
+    [xcubedim, ycubedim, zcubedim] = cubedim = ds.cubedim[res]
+    [xoffset, yoffset, zoffset] = ds.offset[res]
+    
+    # KL TODO Check the bounds here
+    
+    # Calculating the corner and dimension
+    corner = [x1, y1, z1]
+    dim = voxarray.shape[::-1]
+
+    # Round to the nearest largest cube in all dimensions
+    [xstart, ystart, zstart] = start = map(div, corner, cubedim)
+
+    znumcubes = (corner[2]+dim[2]+zcubedim-1)/zcubedim - zstart
+    ynumcubes = (corner[1]+dim[1]+ycubedim-1)/ycubedim - ystart
+    xnumcubes = (corner[0]+dim[0]+xcubedim-1)/xcubedim - xstart
+    numcubes = [xnumcubes, ynumcubes, znumcubes]
+    offset = map(mod, corner, cubedim)
+
+    data_buffer = np.zeros(map(mul, numcubes, cubedim)[::-1], dtype=voxarray.dtype)
+    end = map(add, offset, dim)
+    data_buffer[offset[2]:end[2], offset[1]:end[1], offset[0]:end[0]] = voxarray
+
+    cube_list = []
+    for z in range(znumcubes):
+      for y in range(ynumcubes):
+        for x in range(xnumcubes):
+          zidx = XYZMorton(map(add, start, [x,y,z]))
+         
+          # Parameters in the cube slab
+          index = map(mul, cubedim, [x,y,z])
+          end = map(add, index, cubedim)
+
+          cube_data = data_buffer[index[2]:end[2], index[1]:end[1], index[0]:end[0]]
+          cube_list.append((zidx, blosc.pack_array(cube_data)))
+    
+    print "Preprocessing:", time.time()-start_time
+    channel_rdd = rdd_map.getBlazeRdd(ds, ch, res)
+    channel_rdd.insertData(cube_list)
+  
   def CeleryWorker(self):
 
     try:
