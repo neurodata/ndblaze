@@ -48,10 +48,7 @@ def Benchmark(zidx):
   [x,y,z] = MortonXYZ(i)
   p.args = (x*SIZE, (x+1)*SIZE, y*SIZE, (y+1)*SIZE, z*ZSIZE, (z+1)*ZSIZE)
   image_data = np.ones([1,ZSIZE,SIZE,SIZE], dtype=np.uint32) * random.randint(0,255)
-  import time
-  start = time.time()
   PostBlosc(p, image_data)
-  print time.time()-start
   #PostHDF5(p, image_data)
   #PostNPZ(p, image_data)
 
@@ -100,7 +97,10 @@ def postURL(url, post_data):
   try:
     # Build a post request
     req = urllib2.Request(url, post_data)
+    import time
+    start = time.time()
     response = urllib2.urlopen(req)
+    print time.time()-start
     return response
   except urllib2.HTTPError,e:
     return e
