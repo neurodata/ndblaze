@@ -120,7 +120,7 @@ class Dataset:
 
   def getChannelObj(self, channel_name):
     """Return a channel object"""
-
+    
     for ch in self.channel_list:
       if ch.getChannelName() == channel_name:
         return ch

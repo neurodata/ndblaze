@@ -114,6 +114,17 @@ BROKER_URL = 'amqp://guest@localhost'
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_ACCEPT_CONTENT=['json']
+CELERYD_PREFETCH_MULTIPLIER = 1
+
+CELERY_TIMEZONE = 'UTC'
+from datetime import timedelta
+CELERYBEAT_SCHEDULE = {
+  'add-every-60-seconds': {
+    'task': 'blaze.tasks.flushData',
+    'schedule': timedelta(seconds=60),
+    'args': ()
+  },
+}
 
 ##### OCP Variables #####
 

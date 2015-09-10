@@ -18,11 +18,13 @@ import urllib2
 import cStringIO
 import zlib
 import numpy as np
+import blosc
 from django.conf import settings 
 
 from ocplib import MortonXYZ, XYZMorton
 
 SITE_HOST = settings.SITE_HOST
+
 
 def postNPZ(p, post_data):
   """Post the data using npz format"""
@@ -41,6 +43,26 @@ def postNPZ(p, post_data):
   except urllib2.HTTPError, e:
     print "Error. {}".format(e)
     raise 
+
+
+def postBlosc((p, (zidx,post_data))):
+  """Post the data using blosc format"""
+  
+  [x, y, z] = MortonXYZ(zidx)
+  [xcubedim, ycubedim, zcubedim] = p.cubedim
+  post_args = (x*xcubedim, (x+1)*xcubedim, y*ycubedim, (y+1)*ycubedim, z*zcubedim, (z+1)*zcubedim)
+  
+  # KL TODO Support for timeseries data
+  url = 'http://{}/ca/{}/{}/blosc/{}/{},{}/{},{}/{},{}/'.format(SITE_HOST, p.token, ','.join(p.channels), p.resolution, *post_args)
+
+  # Building the post request and checking it posts correctly
+  try:
+    req = urllib2.Request(url, post_data)
+    response = urllib2.urlopen(req)
+  except urllib2.HTTPError, e:
+    print "Error. {}".format(e)
+    raise 
+
 
 def postHDF5 ((p, (zidx, post_data))):
   """Post data using the hdf5"""
@@ -68,6 +90,22 @@ def postHDF5 ((p, (zidx, post_data))):
     response = urllib2.urlopen(req)
   except urllib2.HTTPError,e:
     pass
+
+
+def getBlosc ((zidx, p)):
+  """Get data using hdf5 service. Returns a voxarray"""
+  
+  [x, y, z] = MortonXYZ(zidx)
+  [xcubedim, ycubedim, zcubedim] = p.cubedim
+  post_args = (x*xcubedim, (x+1)*xcubedim, y*ycubedim, (y+1)*ycubedim, z*zcubedim, (z+1)*zcubedim)
+  
+  # Build the url and then create a hdf5 object
+  url = 'http://{}/ca/{}/{}/blosc/{}/{},{}/{},{}/{},{}/'.format(SITE_HOST, p.token, ','.join(p.channels), p.resolution, *post_args)
+
+  # Get the image back
+  f = urllib2.urlopen (url)
+  return (zidx, blosc.unpack_array(f.read()))
+
 
 def getHDF5 ((zidx, p)):
   """Get data using hdf5 service. Returns a voxarray"""

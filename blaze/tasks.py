@@ -14,18 +14,17 @@
 
 from __future__ import absolute_import
 
-from celery import shared_task
+from celery import task
 from django.conf import settings
 
-#from blaze import rdd_map
+from blaze import rdd_map
 
-@shared_task
-def flushDataTask():
+@task(queue='writer')
+def flushData():
   """Remove the data from the RDD"""
 
-  print 'Testing'
-  #try:
-    #for channel_rdd in rdd_map.getAll():
-      #channel_rdd.flushData()
-  #except Exception, e:
-    #raise
+  try:
+    for channel_rdd in rdd_map.getAll():
+      channel_rdd.flushData()
+  except Exception, e:
+    raise

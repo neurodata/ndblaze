@@ -16,7 +16,7 @@ import numpy as np
 from operator import itemgetter
 
 from ocplib import MortonXYZ, XYZMorton
-from urlmethods import postHDF5, getHDF5
+from urlmethods import postHDF5, getHDF5, postBlosc
 from params import Params
 
 class BlazeRdd:
@@ -37,11 +37,11 @@ class BlazeRdd:
     start = time.time()
     self.rdd = self.rdd.union(self.sc.parallelize(cube_list))
     print time.time()-start
-
+    
     # KL TODO trigger for inserting data under memory pressure
-    #if self.rdd.count() >= 100:
-      ##self.postData()
-      #self.flushData()
+    if self.rdd.count() >= 5:
+      #self.postData()
+      self.flushData()
 
   def postData(self):
     """Write a blob of data sequentially"""
@@ -81,7 +81,7 @@ class BlazeRdd:
     # Post the url
     start = time.time()
     sorted_list = self.rdd.sortByKey().combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda x: (p,x))
-    sorted_list.map(postHDF5).collect()
+    sorted_list.map(postBlosc).collect()
     print "TIME:", time.time()-start
 
     # Clear out the RDD
