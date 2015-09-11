@@ -25,6 +25,7 @@ def flushData():
 
   try:
     for channel_rdd in rdd_map.getAll():
+      print "Flusing", channel_rdd
       channel_rdd.flushData()
   except Exception, e:
     raise

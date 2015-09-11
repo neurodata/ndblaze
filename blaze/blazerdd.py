@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import blosc
 import numpy as np
-from operator import itemgetter
+from operator import itemgetter, div, mul, add, sub, mod
 
 from ocplib import MortonXYZ, XYZMorton
 from urlmethods import postHDF5, getHDF5, postBlosc
 from params import Params
+from dataset import Dataset
 
 class BlazeRdd:
 
@@ -32,16 +34,63 @@ class BlazeRdd:
 
   def insertData(self, cube_list):
 
+    def breakCubes((token,channel_name,res,x1,x2,y1,y2,z1,z2), blosc_data):
+      """break the cubes into smaller chunks"""
+
+      voxarray = blosc.unpack_array(blosc_data)
+      
+      ds = Dataset(token)
+      ch = ds.getChannelObj(channel_name)
+      [zimagesz, yimagesz, ximagesz] = ds.imagesz[res]
+      [xcubedim, ycubedim, zcubedim] = cubedim = ds.cubedim[res]
+      [xcubedim,ycubedim,zcubedim] = cubedim = [512,512,16]
+      [xoffset, yoffset, zoffset] = ds.offset[res]
+      
+      # Calculating the corner and dimension
+      corner = [x1, y1, z1]
+      dim = voxarray.shape[::-1][:-1]
+
+      # Round to the nearest largest cube in all dimensions
+      [xstart, ystart, zstart] = start = map(div, corner, cubedim)
+
+      znumcubes = (corner[2]+dim[2]+zcubedim-1)/zcubedim - zstart
+      ynumcubes = (corner[1]+dim[1]+ycubedim-1)/ycubedim - ystart
+      xnumcubes = (corner[0]+dim[0]+xcubedim-1)/xcubedim - xstart
+      numcubes = [xnumcubes, ynumcubes, znumcubes]
+      offset = map(mod, corner, cubedim)
+
+      data_buffer = np.zeros(map(mul, numcubes, cubedim)[::-1], dtype=voxarray.dtype)
+      end = map(add, offset, dim)
+      data_buffer[offset[2]:end[2], offset[1]:end[1], offset[0]:end[0]] = voxarray
+
+      cube_list = []
+      for z in range(znumcubes):
+        for y in range(ynumcubes):
+          for x in range(xnumcubes):
+            zidx = XYZMorton(map(add, start, [x,y,z]))
+           
+            # Parameters in the cube slab
+            index = map(mul, cubedim, [x,y,z])
+            end = map(add, index, cubedim)
+
+            cube_data = data_buffer[index[2]:end[2], index[1]:end[1], index[0]:end[0]]
+            cube_list.append((zidx, blosc.pack_array(cube_data)))
+      
+      return cube_list[:]
+
     # Inserting data in the rdd
     import time
     start = time.time()
-    self.rdd = self.rdd.union(self.sc.parallelize(cube_list))
+    temp_rdd = self.sc.parallelize(cube_list)
+    temp_rdd = temp_rdd.map(lambda (k,v): breakCubes(k,v)[:]).flatMap(lambda k: k)
+    
+    self.rdd = self.rdd.union(temp_rdd)
     print time.time()-start
     
     # KL TODO trigger for inserting data under memory pressure
-    if self.rdd.count() >= 5:
-      #self.postData()
-      self.flushData()
+    #if self.rdd.count() >= 5:
+      ##self.postData()
+      #self.flushData()
 
   def postData(self):
     """Write a blob of data sequentially"""
