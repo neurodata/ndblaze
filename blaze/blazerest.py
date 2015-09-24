@@ -201,7 +201,14 @@ def postBloscData(webargs, post_data):
   ch = ds.getChannelObj(channel_name)
   channel_rdd = rdd_map.getBlazeRdd(ds, ch, res)
   channel_rdd.insertData( [((token,channel_name,res,x1,x2,y1,y2,z1,z2),post_data)] )
-  
+
+  import pdb; pdb.set_trace()
+  from tasks import flushData
+  from redis import Redis
+  from rq import Queue
+
+  q = Queue(connection=Redis())
+  result = q.enqueue(flushData, rdd_map) 
   
   # KL TODO Make so that we take in multiple channels
   import time

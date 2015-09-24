@@ -12,15 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
+#from __future__ import absolute_import
 
-from celery import task
-from django.conf import settings
+#from celery import task
+#from django.conf import settings
 
-from blaze import rdd_map
-
-@task(queue='writer')
-def flushData():
+#@task(queue='writer')
+def flushData(rdd_map):
   """Remove the data from the RDD"""
 
   try:
