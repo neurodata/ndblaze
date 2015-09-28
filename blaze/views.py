@@ -19,7 +19,7 @@ from django.http import HttpResponse, HttpResponseNotFound, HttpResponseBadReque
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import View
 
-from blazerest import postHDF5Data, getHDF5Data
+from blazerest import postHDF5Data, getHDF5Data, postBloscData
 
 class BlazeView(View):
 
@@ -36,7 +36,7 @@ class BlazeView(View):
     try:
       import time
       start = time.time()
-      postHDF5Data(webargs, request.body)
+      postBloscData(webargs, request.body)
       print "FINAL", time.time()-start
       return HttpResponse("Successful", content_type="text/html")
 

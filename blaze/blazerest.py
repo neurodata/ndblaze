@@ -15,6 +15,7 @@
 import re
 import h5py
 import tempfile
+import blosc
 import numpy as np
 from contextlib import closing
 from operator import div, mul, add, sub, mod
@@ -183,3 +184,32 @@ def postHDF5Data(webargs, post_data):
     start3 = time.time()
     bredis.writeData(ds, ch, cube_list)
     print "Write:",time.time()-start3
+
+
+def postBloscData(webargs, post_data):
+  """Accept a posted region of cutout"""
+
+  try:
+    # arguments of format token/channel/service/resolution/x,x/y,y/z,z/
+    m = re.match("(\w+)/(\w+)/(\w+)/(\d+)/(\d+),(\d+)/(\d+),(\d+)/(\d+),(\d+)/", webargs)
+    [token, channel_name, service] = [i for i in m.groups()[:3]]
+    [res, x1, x2, y1, y2, z1, z2] = [int(i) for i in m.groups()[3:]]
+  except Exception, e:
+    print "Wrong arguments"
+    raise
+
+  # KL TODO Make so that we take in multiple channels
+  # KL TODO check if this matches with backend
+  
+  # Fetaching the info from OCP backend
+  import time
+  start_time = time.time()
+  ds = Dataset(token)
+  ch = ds.getChannelObj(channel_name)
+  
+  # KL TODO Check the bounds here
+  print "Preprocessing:", time.time()-start_time
+  bredis = BlazeRedis()
+  start3 = time.time()
+  bredis.writeData(ds, ch, post_data)
+  print "Write:",time.time()-start3

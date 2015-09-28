@@ -27,19 +27,14 @@ class BlazeRedis:
     except Exception as e:
       raise
 
-  def writeData(self, ds, ch, cube_list):
+  def writeData(self, ds, ch, voxarray):
 
-    serial_time = 0
-    for zidx,cube_data in cube_list:
-      key = "{}_{}_{}".format(ds.token, ch.getChannelName(), zidx) 
-      start = time.time()
-      serial_time += time.time()-start
-      self.pipe.set( key, blosc.pack_array(cube_data) )
+    key = "{}_{}".format(ds.token, ch.getChannelName()) 
+    self.pipe.set( key, voxarray )
 
-    print "Serialization:", serial_time
     start = time.time()
     self.pipe.execute()
-    print "Inserttion:",time.time()-start
+    print "Insertion:",time.time()-start
 
   def readData(self, key_list):
 
