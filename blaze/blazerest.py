@@ -198,18 +198,37 @@ def postBloscData(webargs, post_data):
     print "Wrong arguments"
     raise
 
-  # KL TODO Make so that we take in multiple channels
-  # KL TODO check if this matches with backend
-  
   # Fetaching the info from OCP backend
   import time
   start_time = time.time()
   ds = Dataset(token)
   ch = ds.getChannelObj(channel_name)
+ 
+  [zimagesz, yimagesz, ximagesz] = ds.imagesz[res]
+  [xcubedim, ycubedim, zcubedim] = cubedim = ds.cubedim[res]
+  [xoffset, yoffset, zoffset] = ds.offset[res]
   
-  # KL TODO Check the bounds here
+  
+  # Calculating the corner and dimension
+  corner = [x1, y1, z1]
+  dim = [x2-x1,y2-y1,z2-z1]
+
+  # Round to the nearest largest cube in all dimensions
+  [xstart, ystart, zstart] = start = map(div, corner, cubedim)
+
+  znumcubes = (corner[2]+dim[2]+zcubedim-1)/zcubedim - zstart
+  ynumcubes = (corner[1]+dim[1]+ycubedim-1)/ycubedim - ystart
+  xnumcubes = (corner[0]+dim[0]+xcubedim-1)/xcubedim - xstart
+  numcubes = [xnumcubes, ynumcubes, znumcubes]
+
+  key_list = []
+  for z in range(znumcubes):
+    for y in range(ynumcubes):
+      for x in range(xnumcubes):
+        key_list.append(XYZMorton(map(add, start, [x,y,z])))
+  
   print "Preprocessing:", time.time()-start_time
   bredis = BlazeRedis()
   start3 = time.time()
-  bredis.writeData(ds, ch, post_data)
+  bredis.writeData(ds, ch, post_data, key_list)
   print "Write:",time.time()-start3

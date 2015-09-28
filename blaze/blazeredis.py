@@ -26,17 +26,31 @@ class BlazeRedis:
       self.pipe = self.client.pipeline(transaction=False)
     except Exception as e:
       raise
+ 
+  def executePipe(self):
+    """Execute the pipe"""
+    self.pipe.execute()
 
-  def writeData(self, ds, ch, voxarray):
+  def writeKeys(self, main_key, key_list):
+    """Write the key table"""
+   
+    for key in key_list:
+      self.pipe.set(key, main_key)
+
+  def writeData(self, ds, ch, voxarray, key_list):
+    """Insert the data"""
 
     key = "{}_{}".format(ds.token, ch.getChannelName()) 
     self.pipe.set( key, voxarray )
+    
+    self.writeKeys(key, key_list)
 
     start = time.time()
-    self.pipe.execute()
+    self.executePipe()
     print "Insertion:",time.time()-start
 
   def readData(self, key_list):
+    """Read the data"""
 
     cube_list = []
     for zidx in zidx_list:
