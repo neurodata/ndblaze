@@ -14,18 +14,13 @@
 
 from __future__ import absolute_import
 
-from celery import shared_task
+from celery import task
 from django.conf import settings
 
-#from blaze import rdd_map
+from blaze.urlmethods import postBlosc
 
-@shared_task
-def flushDataTask():
-  """Remove the data from the RDD"""
-
-  print 'Testing'
-  #try:
-    #for channel_rdd in rdd_map.getAll():
-      #channel_rdd.flushData()
-  #except Exception, e:
-    #raise
+@task(queue='post')
+def asyncPostBlosc(((zidx,p), post_data)):
+  """Post the data asynchronously"""
+  
+  postBlosc(((zidx,p), post_data))

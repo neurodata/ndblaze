@@ -22,6 +22,7 @@ from params import Params
 from dataset import Dataset
 from blazeredis import BlazeRedis
 from blazecontext import BlazeContext
+from tasks import asyncPostBlosc
 blaze_context = BlazeContext()
 
 class BlazeRdd:
@@ -64,11 +65,15 @@ class BlazeRdd:
         for x in range(xnumcubes):
           key_list.append(XYZMorton(map(add, start, [x,y,z])))
     
-    #import pdb; pdb.set_trace()
+    def postBlosc2(((zidx,p), post_data)):
+      """Calling the celery job from here"""
+      asyncPostBlosc.delay(((zidx,p),post_data))
+
+    import pdb; pdb.set_trace()
     temp_rdd = self.insertData(key_list)
     zidx_rdd = self.sc.parallelize(key_list).map(lambda x: (x,p)).map(getBlosc)
-    new_rdd = zidx_rdd.union(temp_rdd)
-    zidx_rdd.sortByKey().combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda (k,v) : ((k,p),v)).map(postBlosc).collect()
+    middle_stage = zidx_rdd.union(temp_rdd).collect()
+    self.sc.parallelize(middle_stage).sortByKey().combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda (k,v) : ((k,p),v)).map(postBlosc2).collect()
     #test = temp_rdd.collect() 
 
   def insertData(self, key_list):
