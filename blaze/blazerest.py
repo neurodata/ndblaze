@@ -228,7 +228,33 @@ def postBloscData(webargs, post_data):
         key_list.append(XYZMorton(map(add, start, [x,y,z])))
   
   print "Preprocessing:", time.time()-start_time
-  bredis = BlazeRedis()
+  blaze_redis = BlazeRedis()
   start3 = time.time()
-  bredis.writeData(ds, ch, post_data, key_list)
+  blaze_redis.writeData(ds, ch, res, (x1,x2,y1,y2,z1,z2), post_data, key_list)
   print "Write:",time.time()-start3
+
+
+def getBloscData(webargs):
+  """Return a region of cutout"""
+
+  try:
+    # arguments of format token/channel/service/resolution/x,x/y,y/z,z/
+    m = re.match("(\w+)/(\w+)/(\w+)/(\d+)/(\d+),(\d+)/(\d+),(\d+)/(\d+),(\d+)/", webargs)
+    [token, channel_name, service] = [i for i in m.groups()[:3]]
+    [res, x1, x2, y1, y2, z1, z2] = [int(i) for i in m.groups()[3:]]
+  except Exception, e:
+    print "Wrong arguments"
+    raise
+  
+  # Fetaching the info from OCP backend
+  ds = Dataset(token)
+  ch = ds.getChannelObj(channel_name)
+  [zimagesz, yimagesz, ximagesz] = ds.imagesz[res]
+  [xcubedim, ycubedim, zcubedim] = cubedim = ds.cubedim[res]
+  [xoffset, yoffset, zoffset] = ds.offset[res]
+
+  from blazerdd import BlazeRdd
+  br = BlazeRdd(ds, ch, res)
+  br.loadData(x1,x2,y1,y2,z1,z2)
+
+  return None

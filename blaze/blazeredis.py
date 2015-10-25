@@ -26,21 +26,31 @@ class BlazeRedis:
       self.pipe = self.client.pipeline(transaction=False)
     except Exception as e:
       raise
- 
+
+  def flushDB(self):
+    """Clear the database"""
+    self.client.flushdb()
+
   def executePipe(self):
     """Execute the pipe"""
-    self.pipe.execute()
+    return self.pipe.execute()
 
   def writeKeys(self, main_key, key_list):
     """Write the key table"""
    
     for key in key_list:
-      self.pipe.set(key, main_key)
+      self.pipe.append(key, ","+main_key)
+  
+  def generateKey(self, ds, ch, res, (x1,x2,y1,y2,z1,z2)):
+    """Generate the key"""
 
-  def writeData(self, ds, ch, voxarray, key_list):
+    return '{}_{}_{}_{}_{}_{}_{}_{}_{}'.format(ds.token, ch.getChannelName(), res, x1, x2, y1, y2, z1, z2)
+
+  def writeData(self, ds, ch, res, (x1,x2,y1,y2,z1,z2), voxarray, key_list):
     """Insert the data"""
-
-    key = "{}_{}".format(ds.token, ch.getChannelName()) 
+    
+    self.flushDB()
+    key = self.generateKey(ds, ch, res, (x1,x2,y1,y2,z1,z2))
     self.pipe.set( key, voxarray )
     
     self.writeKeys(key, key_list)
@@ -49,12 +59,22 @@ class BlazeRedis:
     self.executePipe()
     print "Insertion:",time.time()-start
 
+  def getKeys(self, key_list):
+    """Return the value for this data"""
+    
+    for key in key_list:
+      self.pipe.get(key)
+      self.pipe.delete(key)
+  
+  def getBlock(self, key):
+    """Get a single block of data"""
+    data = self.client.get(key)
+    self.client.delete(key)
+    
+    return data
+
   def readData(self, key_list):
     """Read the data"""
-
-    cube_list = []
-    for zidx in zidx_list:
-      key = "{}_{}".format(ds.token,ch.getChannelName(), zidx)
-      cube_list.append(self.client.get(key))
-
-    return cube_list
+    
+    self.getKeys(key_list)
+    return self.executePipe()[0::2]

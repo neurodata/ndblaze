@@ -19,14 +19,14 @@ from django.http import HttpResponse, HttpResponseNotFound, HttpResponseBadReque
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import View
 
-from blazerest import postHDF5Data, getHDF5Data, postBloscData
+from blazerest import postHDF5Data, getHDF5Data, postBloscData, getBloscData
 
 class BlazeView(View):
 
   def get(self, request, webargs):
 
     try:
-      return HttpResponse(getHDF5Data(webargs), content_type="product/hdf5")
+      return HttpResponse(getBloscData(webargs), content_type="product/blosc")
     except Exception, e:
       return HttpResponseBadRequest()
 
