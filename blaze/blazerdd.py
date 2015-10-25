@@ -21,14 +21,14 @@ from urlmethods import postHDF5, getHDF5, postBlosc, getBlosc
 from params import Params
 from dataset import Dataset
 from blazeredis import BlazeRedis
+from blazecontext import BlazeContext
+blaze_context = BlazeContext()
 
 class BlazeRdd:
 
   def __init__(self, ds, ch, res):
     """Create an empty rdd"""
    
-    from blazecontext import BlazeContext
-    blaze_context = BlazeContext()
     self.sc = blaze_context.sc
     self.rdd = self.sc.parallelize("")
     self.ds = ds
@@ -40,8 +40,8 @@ class BlazeRdd:
     """Load data from the region"""
       
     [zimagesz, yimagesz, ximagesz] = self.ds.imagesz[self.res]
-    [xcubedim, ycubedim, zcubedim] = cubedim = self.ds.cubedim[self.res]
-    [xcubedim,ycubedim,zcubedim] = cubedim = [128,128,16]
+    #[xcubedim, ycubedim, zcubedim] = cubedim = self.ds.cubedim[self.res]
+    [xcubedim,ycubedim,zcubedim] = cubedim = [512,512,16]
     [xoffset, yoffset, zoffset] = self.ds.offset[self.res]
     p = Params(self.ds, self.ch, self.res)
     
@@ -64,11 +64,12 @@ class BlazeRdd:
         for x in range(xnumcubes):
           key_list.append(XYZMorton(map(add, start, [x,y,z])))
     
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
     temp_rdd = self.insertData(key_list)
     zidx_rdd = self.sc.parallelize(key_list).map(lambda x: (x,p)).map(getBlosc)
-    temp_rdd = temp_rdd.union(zidx_rdd).sortByKey().combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y))
-    test = temp_rdd.collect() 
+    new_rdd = zidx_rdd.union(temp_rdd)
+    zidx_rdd.sortByKey().combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda (k,v) : ((k,p),v)).map(postBlosc).collect()
+    #test = temp_rdd.collect() 
 
   def insertData(self, key_list):
 
@@ -82,8 +83,8 @@ class BlazeRdd:
       ds = Dataset(token)
       ch = ds.getChannelObj(channel_name)
       [zimagesz, yimagesz, ximagesz] = ds.imagesz[res]
-      [xcubedim, ycubedim, zcubedim] = cubedim = ds.cubedim[res]
-      [xcubedim,ycubedim,zcubedim] = cubedim = [512,512,16]
+      #[xcubedim, ycubedim, zcubedim] = cubedim = ds.cubedim[res]
+      [xcubedim, ycubedim, zcubedim] = cubedim = [512,512,16]
       [xoffset, yoffset, zoffset] = ds.offset[res]
       
       # Calculating the corner and dimension

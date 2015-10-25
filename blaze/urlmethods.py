@@ -45,7 +45,7 @@ def postNPZ(p, post_data):
     raise 
 
 
-def postBlosc((p, (zidx,post_data))):
+def postBlosc(((zidx,p),post_data)):
   """Post the data using blosc format"""
   
   [x, y, z] = MortonXYZ(zidx)
@@ -57,7 +57,7 @@ def postBlosc((p, (zidx,post_data))):
 
   # Building the post request and checking it posts correctly
   try:
-    req = urllib2.Request(url, post_data)
+    req = urllib2.Request(url, blosc.pack_array(post_data))
     response = urllib2.urlopen(req)
   except urllib2.HTTPError, e:
     print "Error. {}".format(e)

@@ -205,7 +205,8 @@ def postBloscData(webargs, post_data):
   ch = ds.getChannelObj(channel_name)
  
   [zimagesz, yimagesz, ximagesz] = ds.imagesz[res]
-  [xcubedim, ycubedim, zcubedim] = cubedim = ds.cubedim[res]
+  #[xcubedim, ycubedim, zcubedim] = cubedim = ds.cubedim[res]
+  [xcubedim, ycubedim, zcubedim] = cubedim = [512,512,16]
   [xoffset, yoffset, zoffset] = ds.offset[res]
   
   
@@ -250,7 +251,8 @@ def getBloscData(webargs):
   ds = Dataset(token)
   ch = ds.getChannelObj(channel_name)
   [zimagesz, yimagesz, ximagesz] = ds.imagesz[res]
-  [xcubedim, ycubedim, zcubedim] = cubedim = ds.cubedim[res]
+  #[xcubedim, ycubedim, zcubedim] = cubedim = ds.cubedim[res]
+  [xcubedim, ycubedim, zcubedim] = cubedim = [512,512,16]
   [xoffset, yoffset, zoffset] = ds.offset[res]
 
   from blazerdd import BlazeRdd

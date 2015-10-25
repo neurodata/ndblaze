@@ -22,7 +22,8 @@ class Params:
     self.channels = [ch.getChannelName()]
     self.channel_type = ch.getChannelType()
     self.datatype = ch.getDataType()
-    self.cubedim = ds.cubedim[res]
+    #self.cubedim = ds.cubedim[res]
+    self.cubedim = [512,512,16]
 
   def __call__ (self):
 
