@@ -72,8 +72,7 @@ class BlazeRdd:
     import pdb; pdb.set_trace()
     temp_rdd = self.insertData(key_list)
     zidx_rdd = self.sc.parallelize(key_list).map(lambda x: (x,p)).map(getBlosc)
-    middle_stage = zidx_rdd.union(temp_rdd).collect()
-    self.sc.parallelize(middle_stage).sortByKey().combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda (k,v) : ((k,p),v)).map(postBlosc2).collect()
+    zidx_rdd.union(temp_rdd).sortByKey().combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda (k,v) : ((k,p),v)).map(postBlosc2).collect()
     #test = temp_rdd.collect() 
 
   def insertData(self, key_list):
@@ -120,8 +119,8 @@ class BlazeRdd:
             end = map(add, index, cubedim)
 
             cube_data = data_buffer[index[2]:end[2], index[1]:end[1], index[0]:end[0]]
-            #cube_list.append((zidx, blosc.pack_array(cube_data)))
-            cube_list.append((zidx, cube_data))
+            cube_list.append((zidx, blosc.pack_array(cube_data)))
+            #cube_list.append((zidx, cube_data))
       
       return cube_list[:]
     

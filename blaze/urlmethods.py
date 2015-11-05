@@ -45,7 +45,7 @@ def postNPZ(p, post_data):
     raise 
 
 
-def postBlosc(((zidx,p),post_data)):
+def postBlosc(((zidx,p), post_data)):
   """Post the data using blosc format"""
   
   [x, y, z] = MortonXYZ(zidx)
@@ -57,7 +57,7 @@ def postBlosc(((zidx,p),post_data)):
 
   # Building the post request and checking it posts correctly
   try:
-    req = urllib2.Request(url, blosc.pack_array(post_data))
+    req = urllib2.Request(url, post_data)
     response = urllib2.urlopen(req)
   except urllib2.HTTPError, e:
     print "Error. {}".format(e)
@@ -104,7 +104,8 @@ def getBlosc ((zidx, p)):
 
   # Get the image back
   f = urllib2.urlopen (url)
-  return (zidx, blosc.unpack_array(f.read()))
+  return (zidx, f.read())
+  #return (zidx, blosc.unpack_array(f.read()))
 
 
 def getHDF5 ((zidx, p)):

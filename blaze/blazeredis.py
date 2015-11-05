@@ -64,12 +64,12 @@ class BlazeRedis:
     
     for key in key_list:
       self.pipe.get(key)
-      self.pipe.delete(key)
+      #self.pipe.delete(key)
   
   def getBlock(self, key):
     """Get a single block of data"""
     data = self.client.get(key)
-    self.client.delete(key)
+    #self.client.delete(key)
     
     return data
 
