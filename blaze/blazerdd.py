@@ -69,10 +69,11 @@ class BlazeRdd:
       """Calling the celery job from here"""
       asyncPostBlosc.delay(((zidx,p),post_data))
 
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
     temp_rdd = self.insertData(key_list)
     zidx_rdd = self.sc.parallelize(key_list).map(lambda x: (x,p)).map(getBlosc)
-    zidx_rdd.union(temp_rdd).sortByKey().combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda (k,v) : ((k,p),v)).map(postBlosc2).collect()
+    #zidx_rdd.union(temp_rdd).sortByKey().combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda (k,v) : ((k,p),v)).map(postBlosc2).collect()
+    zidx_rdd.union(temp_rdd).sortByKey().map(lambda (x,y):(x,blosc.unpack_array(y))).combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda (k,v) : ((k,p),blosc.pack_array(v))).map(postBlosc2).collect()
     #test = temp_rdd.collect() 
 
   def insertData(self, key_list):
