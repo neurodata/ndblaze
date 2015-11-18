@@ -18,9 +18,12 @@ from celery import task
 from django.conf import settings
 
 from blaze.urlmethods import postBlosc
+from blaze.blazeredis import BlazeRedis
 
-@task(queue='post')
+#@task(queue='post')
 def asyncPostBlosc(((zidx,p), post_data)):
   """Post the data asynchronously"""
   
   postBlosc(((zidx,p), post_data))
+  br = BlazeRedis()
+  br.deleteData(p.token, p.channels[0], p.resolution, zidx)

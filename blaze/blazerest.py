@@ -231,7 +231,7 @@ def postBloscData(webargs, post_data):
   print "Preprocessing:", time.time()-start_time
   blaze_redis = BlazeRedis()
   start3 = time.time()
-  blaze_redis.writeData(ds, ch, res, (x1,x2,y1,y2,z1,z2), post_data, key_list)
+  blaze_redis.putData(ds, ch, res, (x1,x2,y1,y2,z1,z2), post_data, key_list)
   print "Write:",time.time()-start3
 
 

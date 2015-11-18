@@ -26,6 +26,9 @@ class BlazeRedis:
       self.pipe = self.client.pipeline(transaction=False)
     except Exception as e:
       raise
+  
+  # Helper Functions
+  # Wrapper Functions for redis interfaces
 
   def flushDB(self):
     """Clear the database"""
@@ -35,46 +38,77 @@ class BlazeRedis:
     """Execute the pipe"""
     return self.pipe.execute()
 
-  def writeKeys(self, main_key, key_list):
-    """Write the key table"""
-   
-    for key in key_list:
-      self.pipe.append(key, ","+main_key)
-  
-  def generateKey(self, ds, ch, res, (x1,x2,y1,y2,z1,z2)):
-    """Generate the key"""
-
-    return '{}_{}_{}_{}_{}_{}_{}_{}_{}'.format(ds.token, ch.getChannelName(), res, x1, x2, y1, y2, z1, z2)
-
-  def writeData(self, ds, ch, res, (x1,x2,y1,y2,z1,z2), voxarray, key_list):
-    """Insert the data"""
+  # Secondary Index GET/PUT/DELETE
+  # Secondary Index points which zindex is contained in which Primary Index
     
-    self.flushDB()
-    key = self.generateKey(ds, ch, res, (x1,x2,y1,y2,z1,z2))
-    self.pipe.set( key, voxarray )
-    
-    self.writeKeys(key, key_list)
+  def generateSIKey(self, ds, ch, res, zindex):
+    """Genarate the secondary index key"""
+    return '{}_{}_{}_{}'.format(ds.token, ch.getChannelName(), res, zindex)
 
-    start = time.time()
-    self.executePipe()
-    print "Insertion:",time.time()-start
-
-  def getKeys(self, key_list):
+  def getSIKeys(self, ds, ch, res, key_list):
     """Return the value for this data"""
-    
     for key in key_list:
-      self.pipe.get(key)
-      #self.pipe.delete(key)
+      SIkey = self.generateSIKey(ds, ch, res, key)
+      self.pipe.smembers(SIkey)
   
+  def putSIKeys(self, ds, ch, res, main_key, key_list):
+    """Write the key table"""
+    for key in key_list:
+      SIkey = self.generateSIKey(ds, ch, res, key)
+      self.pipe.sadd(SIkey, main_key)
+
+  def deleteSIKeys(self, main_key, key_list):
+    """Removing the secondary key"""
+    temp_key = str(main_key) + '_temp'
+    self.putSIKeys(temp_key, key_list)
+    self.pipe.sdiffstore(main_key, main_key, temp_key)
+    self.pipe.delete(temp_key)
+
+  # Primary Index GET/PUT/DELETE
+  # Primary Index points to the actual block
+
+  def generatePIKey(self, ds, ch, res, (x1,x2,y1,y2,z1,z2)):
+    """Generate the primary index key"""
+    return '{}_{}_{}_{}_{}_{}_{}_{}_{}'.format(ds.token, ch.getChannelName(), res, x1, x2, y1, y2, z1, z2)
+  
+  def putBlock(self, key, voxarray):
+    """Insert a single block"""
+    self.pipe.set(key, voxarray)
+  
+  # Used by Spark and so does not have pipe
   def getBlock(self, key):
     """Get a single block of data"""
     data = self.client.get(key)
-    #self.client.delete(key)
-    
     return data
 
-  def readData(self, key_list):
-    """Read the data"""
+  def deleteBlock(self, key):
+    """Delete a single block"""
+    self.pipe.delete(key)
+
+  # Data PUT/GET/DELETE
+  # Spark exposed interfaces for reading and writing Data
+
+  def putData(self, ds, ch, res, (x1,x2,y1,y2,z1,z2), voxarray, key_list):
+    """Insert the data"""
+    self.flushDB()
+    key = self.generatePIKey(ds, ch, res, (x1,x2,y1,y2,z1,z2))
+    # Insert the block
+    self.putBlock(key, voxarray)
+    # write the secondary index 
+    self.putSIKeys(ds, ch, res, key, key_list)
+    self.executePipe()
+
+  def getBlockKeys(self, ds, ch, res, key_list):
+    """Read the block keys"""
+    self.getSIKeys(key_list)
+    return [i.pop() for i in self.executePipe()]
+
+  def deleteData(self, ds, ch, res, SIkey):
+    """Delete the data"""
     
-    self.getKeys(key_list)
-    return self.executePipe()[0::2]
+    key_list = self.getSIKeys(SIkey)
+    for key in key_list:
+      self.deleteBlock(key)
+    self.deleteSIKeys(SIkey, key_list)
+
+    self.executePipe()

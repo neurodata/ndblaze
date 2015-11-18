@@ -19,7 +19,7 @@ class BlazeContext:
 
   def __init__(self):
     """Create a spark context"""
-
+    
     conf = SparkConf().setAppName('blaze')
     #self.sc = SparkContext(conf=conf, serializer=MarshalSerializer(), batchSize=16)
     self.sc = SparkContext(conf=conf, serializer=PickleSerializer(), batchSize=16)
