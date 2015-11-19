@@ -95,7 +95,7 @@ class BlazeRedis:
 
   def putData(self, region, voxarray, key_list):
     """Insert the data"""
-    self.flushDB()
+    #self.flushDB()
     # Insert the block
     key = self.putBlock(region, voxarray)
     # write the secondary index 
@@ -110,7 +110,7 @@ class BlazeRedis:
   def deleteData(self, SIkey):
     """Delete the data"""
     
-    key_list = self.getSIKeys([SIkey])
+    key_list = self.getBlockKeys([SIkey])
     for key in key_list:
       self.deleteBlock(key)
     self.deleteSIKeys(SIkey, key_list)

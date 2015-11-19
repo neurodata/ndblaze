@@ -111,7 +111,6 @@ class BlazeRdd:
             end = map(add, index, cubedim)
 
             cube_data = data_buffer[index[2]:end[2], index[1]:end[1], index[0]:end[0]]
-            #cube_list.append((zidx, blosc.pack_array(cube_data)))
             cube_list.append((br.generateSIKey(zidx), blosc.pack_array(cube_data.reshape((1,)+cube_data.shape))))
       
       return cube_list[:]
@@ -133,12 +132,8 @@ class BlazeRdd:
     temp_rdd = blaze_context.sc.parallelize(blockkey_list)
     temp_rdd = temp_rdd.map(lambda k: breakCubes(*getBlock(k))).flatMap(lambda k : k)
     #dat1 = temp_rdd.collect()
-    # Inserting data in the rdd
-    #test = temp_rdd.flatMap(lambda k : k.split(',')).distinct().map(lambda k: getBlock(k)).collect()
-    #temp_rdd = temp_rdd.flatMap(lambda k : k.split(',')).distinct().map(lambda k : getBlock(k)).filter(lambda (k,v) : k != '').map(lambda (k,v): breakCubes(k,v)[:]).flatMap(lambda k : k)
     
     
-    #zidx_rdd = blaze_context.sc.parallelize(key_list).map(lambda x: (x,p)).map(getBlosc)
     zidx_rdd = blaze_context.sc.parallelize(key_list).map(getBlosc)
     #dat2 = zidx_rdd.collect()
     
@@ -162,8 +157,4 @@ class BlazeRdd:
     #zidx_rdd.union(temp_rdd).map(lambda (x,y):(x,blosc.unpack_array(y))).combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda (k,v) : ((k,p),blosc.pack_array(v))).map(postBlosc2).collect()
     #zidx_rdd.union(temp_rdd).map(lambda (x,y):(x,blosc.unpack_array(y))).combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda (x,y):(x,blosc.pack_array(y))).map(postBlosc2).collect()
     
-    #import pdb; pdb.set_trace()
-    #test3 = zidx_rdd.union(temp_rdd).combineByKey(lambda x: x, mergeCubes, mergeCubes).collect()
-    #import pdb; pdb.set_trace()
     zidx_rdd.union(temp_rdd).combineByKey(lambda x: x, mergeCubes, mergeCubes).map(postBlosc2).collect()
-    #test = temp_rdd.collect() 

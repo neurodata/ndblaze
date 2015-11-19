@@ -27,4 +27,4 @@ def asyncPostBlosc((key, post_data)):
   postBlosc((key, post_data))
   [token, channel, res, zindex] = key.split('_')
   br = BlazeRedis(token, channel, res)
-  #br.deleteData(key)
+  br.deleteData(key)
