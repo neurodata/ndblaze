@@ -180,9 +180,9 @@ def postHDF5Data(webargs, post_data):
           cube_list.append((zidx, cube_data))
     
     print "Preprocessing:", time.time()-start_time
-    bredis = BlazeRedis()
+    bredis = BlazeRedis(ds.token, ch.getChannelName(), res)
     start3 = time.time()
-    bredis.writeData(ds, ch, cube_list)
+    bredis.writeData(cube_list)
     print "Write:",time.time()-start3
 
 
@@ -227,11 +227,11 @@ def postBloscData(webargs, post_data):
     for y in range(ynumcubes):
       for x in range(xnumcubes):
         key_list.append(XYZMorton(map(add, start, [x,y,z])))
-  
+ 
   print "Preprocessing:", time.time()-start_time
-  blaze_redis = BlazeRedis()
+  blaze_redis = BlazeRedis(ds.token, ch.getChannelName(), res)
   start3 = time.time()
-  blaze_redis.putData(ds, ch, res, (x1,x2,y1,y2,z1,z2), post_data, key_list)
+  blaze_redis.putData( (x1,x2,y1,y2,z1,z2), post_data, key_list )
   print "Write:",time.time()-start3
 
 

@@ -18,12 +18,15 @@ import blosc
 
 class BlazeRedis:
 
-  def __init__(self):
+  def __init__(self, ds, ch, res):
     """Create a connection"""
     
     try:
       self.client = redis.StrictRedis(host='localhost', port=6379, db=0)
       self.pipe = self.client.pipeline(transaction=False)
+      self.ch = ch
+      self.ds = ds
+      self.res = res
     except Exception as e:
       raise
   
@@ -41,20 +44,20 @@ class BlazeRedis:
   # Secondary Index GET/PUT/DELETE
   # Secondary Index points which zindex is contained in which Primary Index
     
-  def generateSIKey(self, ds, ch, res, zindex):
+  def generateSIKey(self, zindex):
     """Genarate the secondary index key"""
-    return '{}_{}_{}_{}'.format(ds.token, ch.getChannelName(), res, zindex)
+    return '{}_{}_{}_{}'.format(self.ds, self.ch, self.res, zindex)
 
-  def getSIKeys(self, ds, ch, res, key_list):
+  def getSIKeys(self, key_list):
     """Return the value for this data"""
     for key in key_list:
-      SIkey = self.generateSIKey(ds, ch, res, key)
-      self.pipe.smembers(SIkey)
+      #SIkey = self.generateSIKey(key)
+      self.pipe.smembers(key)
   
-  def putSIKeys(self, ds, ch, res, main_key, key_list):
+  def putSIKeys(self, main_key, key_list):
     """Write the key table"""
     for key in key_list:
-      SIkey = self.generateSIKey(ds, ch, res, key)
+      SIkey = self.generateSIKey(key)
       self.pipe.sadd(SIkey, main_key)
 
   def deleteSIKeys(self, main_key, key_list):
@@ -67,13 +70,15 @@ class BlazeRedis:
   # Primary Index GET/PUT/DELETE
   # Primary Index points to the actual block
 
-  def generatePIKey(self, ds, ch, res, (x1,x2,y1,y2,z1,z2)):
+  def generatePIKey(self, x1, x2, y1, y2, z1, z2):
     """Generate the primary index key"""
-    return '{}_{}_{}_{}_{}_{}_{}_{}_{}'.format(ds.token, ch.getChannelName(), res, x1, x2, y1, y2, z1, z2)
+    return '{}_{}_{}_{}_{}_{}_{}_{}_{}'.format(self.ds, self.ch, self.res, x1, x2, y1, y2, z1, z2)
   
-  def putBlock(self, key, voxarray):
+  def putBlock(self, region, voxarray):
     """Insert a single block"""
+    key = self.generatePIKey(*region)
     self.pipe.set(key, voxarray)
+    return key
   
   # Used by Spark and so does not have pipe
   def getBlock(self, key):
@@ -88,25 +93,24 @@ class BlazeRedis:
   # Data PUT/GET/DELETE
   # Spark exposed interfaces for reading and writing Data
 
-  def putData(self, ds, ch, res, (x1,x2,y1,y2,z1,z2), voxarray, key_list):
+  def putData(self, region, voxarray, key_list):
     """Insert the data"""
     self.flushDB()
-    key = self.generatePIKey(ds, ch, res, (x1,x2,y1,y2,z1,z2))
     # Insert the block
-    self.putBlock(key, voxarray)
+    key = self.putBlock(region, voxarray)
     # write the secondary index 
-    self.putSIKeys(ds, ch, res, key, key_list)
+    self.putSIKeys(key, key_list)
     self.executePipe()
 
-  def getBlockKeys(self, ds, ch, res, key_list):
+  def getBlockKeys(self, key_list):
     """Read the block keys"""
     self.getSIKeys(key_list)
     return [i.pop() for i in self.executePipe()]
 
-  def deleteData(self, ds, ch, res, SIkey):
+  def deleteData(self, SIkey):
     """Delete the data"""
     
-    key_list = self.getSIKeys(SIkey)
+    key_list = self.getSIKeys([SIkey])
     for key in key_list:
       self.deleteBlock(key)
     self.deleteSIKeys(SIkey, key_list)

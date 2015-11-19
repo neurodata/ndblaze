@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import blosc
+import time
 import numpy as np
 from operator import itemgetter, div, add, sub, mod, mul
 
@@ -30,12 +31,10 @@ class BlazeRdd:
   def __init__(self, ds, ch, res):
     """Create an empty rdd"""
    
-    self.sc = blaze_context.sc
-    self.rdd = self.sc.parallelize("")
     self.ds = ds
     self.ch = ch
     self.res = res
-    self.br = BlazeRedis()
+    self.br = BlazeRedis(ds.token, ch.getChannelName(), res)
 
 
   def loadData(self, x1,x2,y1,y2,z1,z2):
@@ -64,38 +63,9 @@ class BlazeRdd:
     for z in range(znumcubes):
       for y in range(ynumcubes):
         for x in range(xnumcubes):
-          key_list.append(XYZMorton(map(add, start, [x,y,z])))
+          key_list.append( self.br.generateSIKey(XYZMorton(map(add, start, [x,y,z]))) )
     
-    def postBlosc2(((zidx,p), post_data)):
-      """Calling the celery job from here"""
-      #asyncPostBlosc.delay(((zidx,p),post_data))
-      asyncPostBlosc(((zidx,p),post_data))
-
-    
-    import time
-    
-    temp_rdd = self.insertData(key_list)
-    zidx_rdd = self.sc.parallelize(key_list).map(lambda x: (x,p)).map(getBlosc)
-    
-    # timing
-    start = time.time()
-    #temp_rdd.collect()
-    print "time 1st collect", time.time()-start
-    start = time.time()
-    #zidx_rdd.collect()
-    print "time 2nd collect", time.time()-start
-    start = time.time()
-    #zidx_rdd.union(temp_rdd).map(lambda (x,y):(x,blosc.unpack_array(y))).map(lambda (k,v) : ((k,p),blosc.pack_array(v))).collect()
-    print "union", time.time()-start
-    # end of timing
-    
-    import pdb; pdb.set_trace()
-    #zidx_rdd.union(temp_rdd).sortByKey().combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda (k,v) : ((k,p),v)).map(postBlosc2).collect()
-    #zidx_rdd.union(temp_rdd).sortByKey().map(lambda (x,y):(x,blosc.unpack_array(y))).combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda (k,v) : ((k,p),blosc.pack_array(v))).map(postBlosc2).collect()
-    zidx_rdd.union(temp_rdd).map(lambda (x,y):(x,blosc.unpack_array(y))).combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda (k,v) : ((k,p),blosc.pack_array(v))).map(postBlosc2).collect()
-    #test = temp_rdd.collect() 
-
-  def insertData(self, key_list):
+    # Internal functions for Spark
 
     def breakCubes(key, blosc_data):
       """break the cubes into smaller chunks"""
@@ -104,6 +74,8 @@ class BlazeRdd:
       [res,x1,x2,y1,y2,z1,z2] = [int(i) for i in key_array[2:]]
       voxarray = blosc.unpack_array(blosc_data)
       
+      br = BlazeRedis(token, channel_name, res)
+
       ds = Dataset(token)
       ch = ds.getChannelObj(channel_name)
       [zimagesz, yimagesz, ximagesz] = ds.imagesz[res]
@@ -139,20 +111,43 @@ class BlazeRdd:
             end = map(add, index, cubedim)
 
             cube_data = data_buffer[index[2]:end[2], index[1]:end[1], index[0]:end[0]]
-            cube_list.append((zidx, blosc.pack_array(cube_data)))
+            #cube_list.append((zidx, blosc.pack_array(cube_data)))
+            cube_list.append((br.generateSIKey(zidx), blosc.pack_array(cube_data)))
       
       return cube_list[:]
     
     def getBlock(key):
       """Get the block from Redis"""
-      br = BlazeRedis()
-      return key,br.getBlock(key)
-
-    data = self.br.getBlockKeys(key_list)
+      [token, ch, res] = key.split('_')[:3]
+      br = BlazeRedis(token, ch, res)
+      return key, br.getBlock(key)
     
-    # Inserting data in the rdd
-    temp_rdd = self.sc.parallelize(data)
+    def postBlosc2((key, post_data)):
+      """Calling the celery job from here"""
+      #asyncPostBlosc.delay(((zidx,p),post_data))
+      asyncPostBlosc((key, post_data))
+
+    # end of Spark functions
+
+    import pdb; pdb.set_trace()
+    blockkey_list = self.br.getBlockKeys(key_list)
+    temp_rdd = blaze_context.sc.parallelize(blockkey_list)
     temp_rdd = temp_rdd.map(lambda k: breakCubes(*getBlock(k))).flatMap(lambda k : k)
+    test1 = temp_rdd.collect()
+    # Inserting data in the rdd
     #test = temp_rdd.flatMap(lambda k : k.split(',')).distinct().map(lambda k: getBlock(k)).collect()
     #temp_rdd = temp_rdd.flatMap(lambda k : k.split(',')).distinct().map(lambda k : getBlock(k)).filter(lambda (k,v) : k != '').map(lambda (k,v): breakCubes(k,v)[:]).flatMap(lambda k : k)
-    return temp_rdd
+    
+    
+    #zidx_rdd = blaze_context.sc.parallelize(key_list).map(lambda x: (x,p)).map(getBlosc)
+    zidx_rdd = blaze_context.sc.parallelize(key_list).map(getBlosc)
+    test2 = zidx_rdd.collect()
+    
+    
+    #zidx_rdd.union(temp_rdd).sortByKey().combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda (k,v) : ((k,p),v)).map(postBlosc2).collect()
+    #zidx_rdd.union(temp_rdd).sortByKey().map(lambda (x,y):(x,blosc.unpack_array(y))).combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda (k,v) : ((k,p),blosc.pack_array(v))).map(postBlosc2).collect()
+    #zidx_rdd.union(temp_rdd).map(lambda (x,y):(x,blosc.unpack_array(y))).combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda (k,v) : ((k,p),blosc.pack_array(v))).map(postBlosc2).collect()
+    
+    zidx_rdd.union(temp_rdd).map(lambda (x,y):(x,blosc.unpack_array(y))).combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda (x,y):(x,blosc.pack_array(y))).map(postBlosc2).collect()
+    #test = temp_rdd.collect() 
+
