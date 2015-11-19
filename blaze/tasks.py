@@ -20,7 +20,7 @@ from django.conf import settings
 from blaze.urlmethods import postBlosc
 from blaze.blazeredis import BlazeRedis
 
-#@task(queue='post')
+@task(queue='post')
 def asyncPostBlosc((key, post_data)):
   """Post the data asynchronously"""
   

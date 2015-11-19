@@ -17,7 +17,7 @@ import time
 import numpy as np
 from operator import itemgetter, div, add, sub, mod, mul
 
-from ocplib import MortonXYZ, XYZMorton
+from ocplib import MortonXYZ, XYZMorton, overwriteMerge_ctype
 from urlmethods import postHDF5, getHDF5, postBlosc, getBlosc
 from params import Params
 from dataset import Dataset
@@ -112,7 +112,7 @@ class BlazeRdd:
 
             cube_data = data_buffer[index[2]:end[2], index[1]:end[1], index[0]:end[0]]
             #cube_list.append((zidx, blosc.pack_array(cube_data)))
-            cube_list.append((br.generateSIKey(zidx), blosc.pack_array(cube_data)))
+            cube_list.append((br.generateSIKey(zidx), blosc.pack_array(cube_data.reshape((1,)+cube_data.shape))))
       
       return cube_list[:]
     
@@ -124,16 +124,15 @@ class BlazeRdd:
     
     def postBlosc2((key, post_data)):
       """Calling the celery job from here"""
-      #asyncPostBlosc.delay(((zidx,p),post_data))
-      asyncPostBlosc((key, post_data))
+      asyncPostBlosc.delay((key,post_data))
+      #asyncPostBlosc((key, post_data))
 
     # end of Spark functions
 
-    import pdb; pdb.set_trace()
     blockkey_list = self.br.getBlockKeys(key_list)
     temp_rdd = blaze_context.sc.parallelize(blockkey_list)
     temp_rdd = temp_rdd.map(lambda k: breakCubes(*getBlock(k))).flatMap(lambda k : k)
-    test1 = temp_rdd.collect()
+    #dat1 = temp_rdd.collect()
     # Inserting data in the rdd
     #test = temp_rdd.flatMap(lambda k : k.split(',')).distinct().map(lambda k: getBlock(k)).collect()
     #temp_rdd = temp_rdd.flatMap(lambda k : k.split(',')).distinct().map(lambda k : getBlock(k)).filter(lambda (k,v) : k != '').map(lambda (k,v): breakCubes(k,v)[:]).flatMap(lambda k : k)
@@ -141,13 +140,30 @@ class BlazeRdd:
     
     #zidx_rdd = blaze_context.sc.parallelize(key_list).map(lambda x: (x,p)).map(getBlosc)
     zidx_rdd = blaze_context.sc.parallelize(key_list).map(getBlosc)
-    test2 = zidx_rdd.collect()
+    #dat2 = zidx_rdd.collect()
     
-    
+    def mergeCubes(data1, data2):
+      """Merge Cubes"""
+      
+      #vec_func = np.vectorize(lambda x,y: x if y == 0 else y)
+      start = time.time()
+      data1 = blosc.unpack_array(data1)
+      data2 = blosc.unpack_array(data2)
+      print "Serial",time.time()-start
+      start = time.time()
+      overwriteMerge_ctype(data1, data2)
+      #data = vec_func(data1, data2)
+      print "Vector",time.time()-start
+      return blosc.pack_array(data1)
+
+
     #zidx_rdd.union(temp_rdd).sortByKey().combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda (k,v) : ((k,p),v)).map(postBlosc2).collect()
     #zidx_rdd.union(temp_rdd).sortByKey().map(lambda (x,y):(x,blosc.unpack_array(y))).combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda (k,v) : ((k,p),blosc.pack_array(v))).map(postBlosc2).collect()
     #zidx_rdd.union(temp_rdd).map(lambda (x,y):(x,blosc.unpack_array(y))).combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda (k,v) : ((k,p),blosc.pack_array(v))).map(postBlosc2).collect()
+    #zidx_rdd.union(temp_rdd).map(lambda (x,y):(x,blosc.unpack_array(y))).combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda (x,y):(x,blosc.pack_array(y))).map(postBlosc2).collect()
     
-    zidx_rdd.union(temp_rdd).map(lambda (x,y):(x,blosc.unpack_array(y))).combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda (x,y):(x,blosc.pack_array(y))).map(postBlosc2).collect()
+    #import pdb; pdb.set_trace()
+    #test3 = zidx_rdd.union(temp_rdd).combineByKey(lambda x: x, mergeCubes, mergeCubes).collect()
+    #import pdb; pdb.set_trace()
+    zidx_rdd.union(temp_rdd).combineByKey(lambda x: x, mergeCubes, mergeCubes).map(postBlosc2).collect()
     #test = temp_rdd.collect() 
-
