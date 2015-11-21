@@ -222,14 +222,14 @@ def postBloscData(webargs, post_data):
   xnumcubes = (corner[0]+dim[0]+xcubedim-1)/xcubedim - xstart
   numcubes = [xnumcubes, ynumcubes, znumcubes]
 
+  blaze_redis = BlazeRedis(ds.token, ch.getChannelName(), res)
   key_list = []
   for z in range(znumcubes):
     for y in range(ynumcubes):
       for x in range(xnumcubes):
-        key_list.append(XYZMorton(map(add, start, [x,y,z])))
+        key_list.append( blaze_redis.generateSIKey(XYZMorton(map(add, start, [x,y,z]))) )
  
   print "Preprocessing:", time.time()-start_time
-  blaze_redis = BlazeRedis(ds.token, ch.getChannelName(), res)
   start3 = time.time()
   blaze_redis.putData( (x1,x2,y1,y2,z1,z2), post_data, key_list )
   print "Write:",time.time()-start3

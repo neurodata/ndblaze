@@ -72,6 +72,8 @@ class BlazeRdd:
       
       key_array = [token,channel_name,res,x1,x2,y1,y2,z1,z2] = key.split('_')
       [res,x1,x2,y1,y2,z1,z2] = [int(i) for i in key_array[2:]]
+      if blosc_data is None:
+        return
       voxarray = blosc.unpack_array(blosc_data)
       
       br = BlazeRedis(token, channel_name, res)
@@ -127,10 +129,10 @@ class BlazeRdd:
       #asyncPostBlosc((key, post_data))
 
     # end of Spark functions
-
+    #self.br.deleteData(key_list[0])
     blockkey_list = self.br.getBlockKeys(key_list)
     temp_rdd = blaze_context.sc.parallelize(blockkey_list)
-    temp_rdd = temp_rdd.map(lambda k: breakCubes(*getBlock(k))).flatMap(lambda k : k)
+    temp_rdd = temp_rdd.map(lambda k: breakCubes(*getBlock(k))).filter(lambda k : k is not None).flatMap(lambda k : k)
     #dat1 = temp_rdd.collect()
     
     
@@ -142,6 +144,9 @@ class BlazeRdd:
       
       #vec_func = np.vectorize(lambda x,y: x if y == 0 else y)
       start = time.time()
+      #if data1 is None:
+        #return data2
+    
       data1 = blosc.unpack_array(data1)
       data2 = blosc.unpack_array(data2)
       print "Serial",time.time()-start

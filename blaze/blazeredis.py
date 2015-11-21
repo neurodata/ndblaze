@@ -52,20 +52,19 @@ class BlazeRedis:
     """Return the value for this data"""
     for key in key_list:
       #SIkey = self.generateSIKey(key)
+      print "get:", key
       self.pipe.smembers(key)
   
   def putSIKeys(self, main_key, key_list):
     """Write the key table"""
     for key in key_list:
-      SIkey = self.generateSIKey(key)
-      self.pipe.sadd(SIkey, main_key)
+      #SIkey = self.generateSIKey(key)
+      print "Adding:", key, " to:", main_key
+      self.pipe.sadd(key, main_key)
 
   def deleteSIKeys(self, main_key, key_list):
     """Removing the secondary key"""
-    temp_key = str(main_key) + '_temp'
-    self.putSIKeys(temp_key, key_list)
-    self.pipe.sdiffstore(main_key, main_key, temp_key)
-    self.pipe.delete(temp_key)
+    self.pipe.srem(main_key, *key_list)
 
   # Primary Index GET/PUT/DELETE
   # Primary Index points to the actual block
@@ -95,7 +94,7 @@ class BlazeRedis:
 
   def putData(self, region, voxarray, key_list):
     """Insert the data"""
-    #self.flushDB()
+    self.flushDB()
     # Insert the block
     key = self.putBlock(region, voxarray)
     # write the secondary index 
@@ -105,7 +104,8 @@ class BlazeRedis:
   def getBlockKeys(self, key_list):
     """Read the block keys"""
     self.getSIKeys(key_list)
-    return [i.pop() for i in self.executePipe()]
+    # chekcing in case of empty sets
+    return [i.pop() if i else None for i in self.executePipe()]
 
   def deleteData(self, SIkey):
     """Delete the data"""
