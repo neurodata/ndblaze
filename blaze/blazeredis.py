@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import redis
+import redlock
 import time
 import blosc
 
@@ -23,6 +24,7 @@ class BlazeRedis:
     
     try:
       self.client = redis.StrictRedis(host='localhost', port=6379, db=0)
+      self.dlm = redlock.Redlock([{"host": "localhost", "port": 6379, "db": 0}, ])
       self.pipe = self.client.pipeline(transaction=False)
       self.ch = ch
       self.ds = ds
@@ -53,6 +55,7 @@ class BlazeRedis:
     for key in key_list:
       #SIkey = self.generateSIKey(key)
       print "get:", key
+      #self.dlm.lock(key,1000)
       self.pipe.smembers(key)
   
   def putSIKeys(self, main_key, key_list):
@@ -65,6 +68,7 @@ class BlazeRedis:
   def deleteSIKeys(self, main_key, key_list):
     """Removing the secondary key"""
     self.pipe.srem(main_key, *key_list)
+    #self.dlm.unlock(main_key)
 
   # Primary Index GET/PUT/DELETE
   # Primary Index points to the actual block

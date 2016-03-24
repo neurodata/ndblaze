@@ -125,14 +125,15 @@ class BlazeRdd:
     
     def postBlosc2((key, post_data)):
       """Calling the celery job from here"""
-      asyncPostBlosc.delay((key,post_data))
-      #asyncPostBlosc((key, post_data))
+      #asyncPostBlosc.delay((key,post_data))
+      asyncPostBlosc((key, post_data))
 
     # end of Spark functions
     #self.br.deleteData(key_list[0])
     blockkey_list = self.br.getBlockKeys(key_list)
+    import pdb; pdb.set_trace()
     temp_rdd = blaze_context.sc.parallelize(blockkey_list)
-    temp_rdd = temp_rdd.map(lambda k: breakCubes(*getBlock(k))).filter(lambda k : k is not None).flatMap(lambda k : k)
+    temp_rdd = temp_rdd.filter(lambda k : k is not None).map(lambda k: breakCubes(*getBlock(k))).flatMap(lambda k : k)
     #dat1 = temp_rdd.collect()
     
     
