@@ -23,11 +23,11 @@ import urllib2
 import zlib
 import cStringIO
 
-sys.path += [os.path.abspath('..')]
-import ocpblaze.settings
-os.environ['DJANGO_SETTINGS_MODULE'] = 'ocpblaze.settings'
+sys.path += [os.path.abspath('../')]
+import ndblaze.settings
+os.environ['DJANGO_SETTINGS_MODULE'] = 'ndblaze.settings'
 
-from blaze.ocplib import MortonXYZ
+from ndlib import MortonXYZ
 from params import Params
 
 p = Params()

@@ -17,7 +17,7 @@ import time
 import numpy as np
 from operator import itemgetter, div, add, sub, mod, mul
 
-from ocplib import MortonXYZ, XYZMorton, overwriteMerge_ctype
+from ndlib import MortonXYZ, XYZMorton, overwriteMerge_ctype
 from urlmethods import postHDF5, getHDF5, postBlosc, getBlosc
 from params import Params
 from dataset import Dataset

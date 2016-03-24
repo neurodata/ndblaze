@@ -17,7 +17,7 @@ import numpy as np
 import random
 
 import settings
-from blaze import ocplib
+from blaze import ndlib
 from params import Params
 from postmethods import postHDF5
 
@@ -35,18 +35,18 @@ class Test_Hdf5:
     """Test a simple post"""
 
   # Posting zindex 0
-  [x,y,z] = ocplib.MortonXYZ(0)
+  [x,y,z] = ndlib.MortonXYZ(0)
   p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
   image_data = np.ones([1,16,128,128], dtype=np.uint8) * 50
   response = postHDF5(p, image_data)
   # Posting zindex 0
-  [x,y,z] = ocplib.MortonXYZ(0)
+  [x,y,z] = ndlib.MortonXYZ(0)
   p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
   image_data = np.zeros([1,16,128,128], dtype=np.uint8)
   image_data[0,0,100,100] = 2
   response = postHDF5(p, image_data)
   # Posting zindex 0
-  [x,y,z] = ocplib.MortonXYZ(0)
+  [x,y,z] = ndlib.MortonXYZ(0)
   p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
   image_data = np.zeros([1,16,128,128], dtype=np.uint8)
   image_data[0,0,100,100] = 1
@@ -55,56 +55,56 @@ class Test_Hdf5:
   zidx_list = range(0,100)
   random.shuffle(zidx_list)
   for i in zidx_list:
-    [x,y,z] = ocplib.MortonXYZ(i)
+    [x,y,z] = ndlib.MortonXYZ(i)
     p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
     image_data = np.ones([1,16,128,128], dtype=np.uint8) * random.randint(0,255)
     response = postHDF5(p, image_data)
   
   pass
   # Posting zindex 0
-  [x,y,z] = ocplib.MortonXYZ(0)
+  [x,y,z] = ndlib.MortonXYZ(0)
   p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
   image_data = np.ones([1,16,128,128], dtype=np.uint8) * random.randint(0,255)
   response = postHDF5(p, image_data)
   
   # Posting zindex 6
-  [x,y,z] = ocplib.MortonXYZ(6)
+  [x,y,z] = ndlib.MortonXYZ(6)
   p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
   image_data = np.ones([1,16,128,128], dtype=np.uint8) * random.randint(0,255)
   response = postHDF5(p, image_data)
 
   # Posting zindex 8
-  [x,y,z] = ocplib.MortonXYZ(8)
+  [x,y,z] = ndlib.MortonXYZ(8)
   p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
   image_data = np.ones([1,16,128,128], dtype=np.uint8) * random.randint(0,255)
   response = postHDF5(p, image_data)
   
   # Posting zindex 5
-  [x,y,z] = ocplib.MortonXYZ(5)
+  [x,y,z] = ndlib.MortonXYZ(5)
   p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
   image_data = np.ones([1,16,128,128], dtype=np.uint8) * random.randint(0,255)
   response = postHDF5(p, image_data)
   
   # Posting zindex 1
-  [x,y,z] = ocplib.MortonXYZ(1)
+  [x,y,z] = ndlib.MortonXYZ(1)
   p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
   image_data = np.ones([1,16,128,128], dtype=np.uint8) * random.randint(0,255)
   response = postHDF5(p, image_data)
   
   # Posting zindex 2
-  [x,y,z] = ocplib.MortonXYZ(2)
+  [x,y,z] = ndlib.MortonXYZ(2)
   p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
   image_data = np.ones([1,16,128,128], dtype=np.uint8) * random.randint(0,255)
   response = postHDF5(p, image_data)
 
   # Posting zindex 3
-  [x,y,z] = ocplib.MortonXYZ(3)
+  [x,y,z] = ndlib.MortonXYZ(3)
   p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
   image_data = np.ones([1,16,128,128], dtype=np.uint8) * random.randint(0,255)
   response = postHDF5(p, image_data)
   
   # Posting zindex 7
-  [x,y,z] = ocplib.MortonXYZ(7)
+  [x,y,z] = ndlib.MortonXYZ(7)
   p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
   image_data = np.ones([1,16,128,128], dtype=np.uint8) * random.randint(0,255)
   response = postHDF5(p, image_data)

@@ -21,7 +21,7 @@ from contextlib import closing
 from operator import div, mul, add, sub, mod
 
 from blazeredis import BlazeRedis
-from ocplib import XYZMorton, MortonXYZ
+from ndlib import XYZMorton, MortonXYZ
 from dataset import Dataset
 
 def getHDF5Data(webargs):
@@ -36,7 +36,7 @@ def getHDF5Data(webargs):
     print "Wrong arguments"
     raise
   
-  # Fetaching the info from OCP backend
+  # Fetaching the info from nd backend
   ds = Dataset(token)
   ch = ds.getChannelObj(channel_name)
   [zimagesz, yimagesz, ximagesz] = ds.imagesz[res]
@@ -139,7 +139,7 @@ def postHDF5Data(webargs, post_data):
     h5_datatype = h5f.get(channel_name)['DATATYPE'].value[0]
     h5_channeltype = h5f.get(channel_name)['CHANNELTYPE'].value[0]
     
-    # Fetaching the info from OCP backend
+    # Fetaching the info from nd backend
     start_time = time.time()
     ds = Dataset(token)
     ch = ds.getChannelObj(channel_name)
@@ -198,7 +198,7 @@ def postBloscData(webargs, post_data):
     print "Wrong arguments"
     raise
 
-  # Fetaching the info from OCP backend
+  # Fetaching the info from nd backend
   import time
   start_time = time.time()
   ds = Dataset(token)
@@ -247,7 +247,7 @@ def getBloscData(webargs):
     print "Wrong arguments"
     raise
   
-  # Fetaching the info from OCP backend
+  # Fetaching the info from nd backend
   ds = Dataset(token)
   ch = ds.getChannelObj(channel_name)
   [zimagesz, yimagesz, ximagesz] = ds.imagesz[res]

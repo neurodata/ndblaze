@@ -21,7 +21,7 @@ import numpy as np
 import blosc
 from django.conf import settings 
 
-from ocplib import MortonXYZ, XYZMorton
+from ndlib import MortonXYZ, XYZMorton
 
 SITE_HOST = settings.SITE_HOST
 

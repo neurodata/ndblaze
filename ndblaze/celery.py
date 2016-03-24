@@ -12,19 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-WSGI config for ocpblaze project.
-
-It exposes the WSGI callable as a module-level variable named ``application``.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/1.8/howto/deployment/wsgi/
-"""
+from __future__ import absolute_import
 
 import os
+from celery import Celery
+from django.conf import settings
 
-from django.core.wsgi import get_wsgi_application
+# set the default Django settings module for the 'celery' program.
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ndblaze.settings')
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ocpblaze.settings")
+app = Celery('blaze')
 
-application = get_wsgi_application()
+# Using a string here means the worker will not have to pickle the object when using Windows.
+app.config_from_object('django.conf:settings')
+app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
