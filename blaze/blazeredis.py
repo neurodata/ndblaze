@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import redis
-import redlock
+#import redlock
 import time
 import blosc
+import redis
 
 class BlazeRedis:
 
@@ -23,8 +23,10 @@ class BlazeRedis:
     """Create a connection"""
     
     try:
-      self.client = redis.StrictRedis(host='localhost', port=6379, db=0)
-      self.dlm = redlock.Redlock([{"host": "localhost", "port": 6379, "db": 0}, ])
+      #self.client = redis.StrictRedis(host='localhost', port=6379, db=0)
+      from ndblaze.settings import REDIS_SERVER
+      self.client = redis.StrictRedis(host=REDIS_SERVER, port=6379, db=0)
+      #self.dlm = redlock.Redlock([{"host": "localhost", "port": 6379, "db": 0}, ])
       self.pipe = self.client.pipeline(transaction=False)
       self.ch = ch
       self.ds = ds

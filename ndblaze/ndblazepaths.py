@@ -19,7 +19,6 @@
 import os, sys
 
 NDBLAZE_BASE_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), ".." ))
-print NDBLAZE_BASE_PATH
 
 NDBLAZE_NDLIB_PATH = os.path.join(NDBLAZE_BASE_PATH, "ndlib" )
 NDBLAZE_UTIL_PATH = os.path.join(NDBLAZE_BASE_PATH, "util" )

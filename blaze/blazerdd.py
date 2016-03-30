@@ -17,11 +17,11 @@ import time
 import numpy as np
 from operator import itemgetter, div, add, sub, mod, mul
 
-from ndlib import MortonXYZ, XYZMorton, overwriteMerge_ctype
-from urlmethods import postHDF5, getHDF5, postBlosc, getBlosc
-from params import Params
 from dataset import Dataset
 from blazeredis import BlazeRedis
+from ndlib import MortonXYZ, XYZMorton, overwriteMerge_ctype
+from urlmethods import postBlosc, getBlosc
+from params import Params
 from blazecontext import BlazeContext
 from tasks import asyncPostBlosc
 blaze_context = BlazeContext()
@@ -134,9 +134,10 @@ class BlazeRdd:
     import pdb; pdb.set_trace()
     temp_rdd = blaze_context.sc.parallelize(blockkey_list)
     temp_rdd = temp_rdd.filter(lambda k : k is not None).map(lambda k: breakCubes(*getBlock(k))).flatMap(lambda k : k)
+    #temp_rdd.filter(lambda k : k is not None).map(lambda k: breakCubes(*getBlock(k))).collect()
     #dat1 = temp_rdd.collect()
     
-    
+    # from blaze.urlmethods import getBlosc
     zidx_rdd = blaze_context.sc.parallelize(key_list).map(getBlosc)
     #dat2 = zidx_rdd.collect()
     
@@ -147,12 +148,12 @@ class BlazeRdd:
       start = time.time()
       #if data1 is None:
         #return data2
-    
+      import ndlib 
       data1 = blosc.unpack_array(data1)
       data2 = blosc.unpack_array(data2)
       print "Serial",time.time()-start
       start = time.time()
-      overwriteMerge_ctype(data1, data2)
+      ndlib.overwriteMerge_ctype(data1, data2)
       #data = vec_func(data1, data2)
       print "Vector",time.time()-start
       return blosc.pack_array(data1)
@@ -163,4 +164,5 @@ class BlazeRdd:
     #zidx_rdd.union(temp_rdd).map(lambda (x,y):(x,blosc.unpack_array(y))).combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda (k,v) : ((k,p),blosc.pack_array(v))).map(postBlosc2).collect()
     #zidx_rdd.union(temp_rdd).map(lambda (x,y):(x,blosc.unpack_array(y))).combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda (x,y):(x,blosc.pack_array(y))).map(postBlosc2).collect()
     
-    zidx_rdd.union(temp_rdd).combineByKey(lambda x: x, mergeCubes, mergeCubes).map(postBlosc2).collect()
+    #zidx_rdd.union(temp_rdd).combineByKey(lambda x: x, mergeCubes, mergeCubes).map(postBlosc2).collect()
+    zidx_rdd.union(temp_rdd).combineByKey(lambda x: x, mergeCubes, mergeCubes).collect()

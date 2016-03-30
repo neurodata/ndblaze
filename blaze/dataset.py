@@ -13,12 +13,10 @@
 # limitations under the License.
 
 import json
-from urlmethods import getURL
-from django.conf import settings 
-SITE_HOST = settings.SITE_HOST
 
+from blazedb import BlazeDB 
+from urlmethods import getURL
 from ndtype import ND_scalingtoint, ZSLICES, ISOTROPIC
-from blazedb import BlazeDB
 
 class Dataset:
 
@@ -41,6 +39,7 @@ class Dataset:
   def fetchDataset (self):
     """Fetch a dataset to the list of cacheable datasets"""
 
+    from ndblaze.settings import SITE_HOST
     f = getURL('http://{}/ca/{}/info/'.format(SITE_HOST, self.token))
     info = json.loads(f.read())
     self.ximagesz, self.yimagesz, self.zimagesz = info['dataset']['imagesize']['0']

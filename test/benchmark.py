@@ -27,20 +27,21 @@ sys.path += [os.path.abspath('../')]
 import ndblaze.settings
 os.environ['DJANGO_SETTINGS_MODULE'] = 'ndblaze.settings'
 
+import blosc
 from ndlib import MortonXYZ
 from params import Params
 
 p = Params()
-p.token = "blaze2"
+p.token = "blaze1"
 p.resolution = 0
-p.channels = ['anno']
+p.channels = ['image']
 p.window = [0,0]
 #p.channel_type = "annotation"
 p.channel_type = "image"
 #p.datatype = "uint32"
 p.datatype = "uint8"
-SIZE = 1024
-ZSIZE = 108
+SIZE = 128
+ZSIZE = 16
 
 def Benchmark(zidx):
   """Run the Benchmark."""
@@ -49,8 +50,9 @@ def Benchmark(zidx):
   [x,y,z] = MortonXYZ(i)
   p.args = (x*SIZE, (x+1)*SIZE, y*SIZE, (y+1)*SIZE, z*ZSIZE, (z+1)*ZSIZE)
   image_data = np.ones([1,16,SIZE,SIZE], dtype=np.uint8) * random.randint(0,255)
-  response = PostHDF5(p, image_data)
+  response = PostBlosc(p, image_data)
   #response = PostNPZ(p, image_data)
+
 
 def PostHDF5 (p, post_data):
   """Post data using the hdf5 interface"""
@@ -79,19 +81,15 @@ def PostHDF5 (p, post_data):
   except urllib2.HTTPError,e:
     return e
 
-def PostNPZ (p, post_data):
+def PostBlosc (p, post_data):
   """Post data using the npz interface"""
   
   # Build the url and then create a npz object
-  url = 'http://{}/{}/{}/npz/{}/{},{}/{},{}/{},{}/'.format(SITE_HOST, p.token, ','.join(p.channels), p.resolution, *p.args)
+  url = 'http://{}/blaze/{}/{}/blosc/{}/{},{}/{},{}/{},{}/'.format(SITE_HOST, p.token, ','.join(p.channels), p.resolution, *p.args)
 
-  fileobj = cStringIO.StringIO ()
-  np.save (fileobj, post_data)
-  cdz = zlib.compress (fileobj.getvalue())
-  
   try:
     # Build a post request
-    req = urllib2.Request(url, cdz)
+    req = urllib2.Request(url, blosc.pack_array(post_data))
     response = urllib2.urlopen(req)
     return response
   except urllib2.HTTPError,e:

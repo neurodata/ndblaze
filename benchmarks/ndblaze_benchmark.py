@@ -171,7 +171,7 @@ def main():
     csv_writer = csv.writer(csv_file, delimiter=',')
     
     # iterating over data size
-    for data_size in range(1, result.data_size+1, 1):
+    for data_size in range(result.data_size, result.data_size+1, 1):
       
       # setting the time value list to zero
       time_values = []
@@ -197,7 +197,7 @@ def main():
         
         time_values.append(time.time()-start_time)
       
-      csv_writer.writerow([math.pow(2,data_size-2)]+time_values)
+      csv_writer.writerow([math.pow(2,data_size-3)]+time_values)
 
 
 if __name__ == '__main__':
