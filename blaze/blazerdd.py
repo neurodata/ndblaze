@@ -70,8 +70,8 @@ class BlazeRdd:
     def breakCubes(key, blosc_data):
       """break the cubes into smaller chunks"""
       
-      key_array = [token,channel_name,res,x1,x2,y1,y2,z1,z2] = key.split('_')
-      [res,x1,x2,y1,y2,z1,z2] = [int(i) for i in key_array[2:]]
+      key_array = [token, channel_name, res, x1, x2, y1, y2, z1, z2, time_stamp] = key.split('_')
+      [res, x1, x2, y1, y2, z1, z2] = [int(i) for i in key_array[2:][:-1]]
       if blosc_data is None:
         return
       voxarray = blosc.unpack_array(blosc_data)
@@ -125,17 +125,20 @@ class BlazeRdd:
     
     def postBlosc2((key, post_data)):
       """Calling the celery job from here"""
-      #asyncPostBlosc.delay((key,post_data))
-      asyncPostBlosc((key, post_data))
+      asyncPostBlosc.delay((key,post_data))
+      # asyncPostBlosc((key, post_data))
+      return post_data
 
     # end of Spark functions
     #self.br.deleteData(key_list[0])
     blockkey_list = self.br.getBlockKeys(key_list)
-    import pdb; pdb.set_trace()
+    blockkey_list.sort()
     temp_rdd = blaze_context.sc.parallelize(blockkey_list)
+    # temp_rdd = temp_rdd.filter(lambda k : k is not None).map(lambda k : '_'.join(k.split('_')[:-1])).map(lambda k: breakCubes(*getBlock(k))).flatMap(lambda k : k)
+    # temp_rdd = temp_rdd.filter(lambda k : k is not None).map(lambda k: breakCubes(*getBlock(k))).flatMap(lambda k : '_'.join(k.split('_')[:-1]))
     temp_rdd = temp_rdd.filter(lambda k : k is not None).map(lambda k: breakCubes(*getBlock(k))).flatMap(lambda k : k)
-    #temp_rdd.filter(lambda k : k is not None).map(lambda k: breakCubes(*getBlock(k))).collect()
-    #dat1 = temp_rdd.collect()
+    # temp_rdd.filter(lambda k : k is not None).map(lambda k: breakCubes(*getBlock(k))).collect()
+    # dat1 = temp_rdd.collect()
     
     # from blaze.urlmethods import getBlosc
     zidx_rdd = blaze_context.sc.parallelize(key_list).map(getBlosc)
@@ -164,5 +167,7 @@ class BlazeRdd:
     #zidx_rdd.union(temp_rdd).map(lambda (x,y):(x,blosc.unpack_array(y))).combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda (k,v) : ((k,p),blosc.pack_array(v))).map(postBlosc2).collect()
     #zidx_rdd.union(temp_rdd).map(lambda (x,y):(x,blosc.unpack_array(y))).combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda (x,y):(x,blosc.pack_array(y))).map(postBlosc2).collect()
     
-    #zidx_rdd.union(temp_rdd).combineByKey(lambda x: x, mergeCubes, mergeCubes).map(postBlosc2).collect()
-    zidx_rdd.union(temp_rdd).combineByKey(lambda x: x, mergeCubes, mergeCubes).collect()
+    # import pdb; pdb.set_trace()
+    merged_data = zidx_rdd.union(temp_rdd).combineByKey(lambda x: x, mergeCubes, mergeCubes).map(postBlosc2).collect()
+    return merged_data[0]
+    # zidx_rdd.union(temp_rdd).combineByKey(lambda x: x, mergeCubes, mergeCubes).collect()

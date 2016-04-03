@@ -30,10 +30,10 @@ from celery import task
 def asyncPostBlosc((key, post_data)):
   """Post the data asynchronously"""
   
-  from urlmethods import postBlosc 
+  from blaze.urlmethods import postBlosc
   postBlosc((key, post_data))
   [token, channel, res, zindex] = key.split('_')
-  from blazeredis import BlazeRedis
+  from blaze.blazeredis import BlazeRedis
   br = BlazeRedis(token, channel, res)
-  print "deleting",key
+  print "deleting", key
   br.deleteData(key)

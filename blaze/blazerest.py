@@ -257,6 +257,6 @@ def getBloscData(webargs):
 
   from blazerdd import BlazeRdd
   br = BlazeRdd(ds, ch, res)
-  br.loadData(x1,x2,y1,y2,z1,z2)
-
-  return None
+  data = br.loadData(x1,x2,y1,y2,z1,z2)
+  
+  return data

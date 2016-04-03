@@ -77,7 +77,8 @@ class BlazeRedis:
 
   def generatePIKey(self, x1, x2, y1, y2, z1, z2):
     """Generate the primary index key"""
-    return '{}_{}_{}_{}_{}_{}_{}_{}_{}'.format(self.ds, self.ch, self.res, x1, x2, y1, y2, z1, z2)
+    import time
+    return '{}_{}_{}_{}_{}_{}_{}_{}_{}_{}'.format(self.ds, self.ch, self.res, x1, x2, y1, y2, z1, z2, time.clock())
   
   def putBlock(self, region, voxarray):
     """Insert a single block"""
@@ -100,7 +101,7 @@ class BlazeRedis:
 
   def putData(self, region, voxarray, key_list):
     """Insert the data"""
-    self.flushDB()
+    # self.flushDB()
     # Insert the block
     key = self.putBlock(region, voxarray)
     # write the secondary index 
@@ -109,14 +110,18 @@ class BlazeRedis:
 
   def getBlockKeys(self, key_list):
     """Read the block keys"""
+    
     self.getSIKeys(key_list)
+    SIkey_list = self.executePipe()
     # chekcing in case of empty sets
-    return [i.pop() if i else None for i in self.executePipe()]
+    return [i for i in iter(SIkey_list[0]) if i is not None]
+    # return [i.pop() if i else None for i in SIkey_list]
 
   def deleteData(self, SIkey):
     """Delete the data"""
     
     key_list = self.getBlockKeys([SIkey])
+    print key_list
     for key in key_list:
       self.deleteBlock(key)
     self.deleteSIKeys(SIkey, key_list)
