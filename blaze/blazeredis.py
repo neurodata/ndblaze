@@ -14,6 +14,8 @@
 
 #import redlock
 import time
+import re
+import itertools
 import blosc
 import redis
 
@@ -101,6 +103,7 @@ class BlazeRedis:
 
   def putData(self, region, voxarray, key_list):
     """Insert the data"""
+    
     # self.flushDB()
     # Insert the block
     key = self.putBlock(region, voxarray)
@@ -113,9 +116,23 @@ class BlazeRedis:
     
     self.getSIKeys(key_list)
     SIkey_list = self.executePipe()
-    # chekcing in case of empty sets
-    return [i for i in iter(SIkey_list[0]) if i is not None]
+    # iterate over a list of Sets and making it a single list
+    # the condition is for checking in case of empty sets so remove None
+    # KL TODO oO this in Spark
+    return [i for i in itertools.chain.from_iterable(SIkey_list) if i is not None]
+    
+    # return [i for i in iter(SIkey_list[0]) if i is not None]
     # return [i.pop() if i else None for i in SIkey_list]
+  
+  def getAllBlockKeys(self):
+    """Read all the keys for the given dataset"""
+    
+    # fetch all keys matching the pattern
+    key_list = self.client.keys('{}_{}_{}_*'.format(self.ds, self.ch, self.res))
+    # filter the keys with this pattern
+    # KL TODO this should be Spark
+    key_list = filter(re.compile('{}_{}_{}_(\d+)$'.format(self.ds, self.ch, self.res)).match, key_list)
+    return key_list, self.getBlockKeys(key_list)
 
   def deleteData(self, SIkey):
     """Delete the data"""

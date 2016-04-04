@@ -30,49 +30,47 @@ from postmethods import postBlosc, getBlosc
 p = Params()
 p.token = "blaze1"
 p.resolution = 0
-p.channels = ['image']
+p.channels = ['image2']
 p.window = [0,0]
 p.channel_type = "image"
-p.datatype = "uint8"
+p.datatype = "uint32"
 
-class Test_Hdf5:
+class Test_Blosc:
 
   def test_simple(self):
     """Test a simple post"""
 
-  # Posting zindex 0
-  [x,y,z] = ndlib.MortonXYZ(0)
-  p.args = (x*512, (x+1)*512, y*512, (y+1)*512, z*16, (z+1)*16)
-  image_data = np.ones([1,16,512,512], dtype=np.uint8) * 50
-  response = postBlosc(p, image_data)
-  # Posting zindex 0
-  [x,y,z] = ndlib.MortonXYZ(0)
-  p.args = (x*512, (x+1)*512, y*512, (y+1)*512, z*16, (z+1)*16)
-  image_data = np.zeros([1,16,512,512], dtype=np.uint8)
-  image_data[0,0,100,100] = 2
-  response = postBlosc(p, image_data)
-  # Posting zindex 0
-  [x,y,z] = ndlib.MortonXYZ(0)
-  p.args = (x*512, (x+1)*512, y*512, (y+1)*512, z*16, (z+1)*16)
-  image_data = np.zeros([1,16,512,512], dtype=np.uint8)
-  image_data[0,0,100,100] = 1
-  response = postBlosc(p, image_data)
-  
+  # # Posting zindex 0
   # [x,y,z] = ndlib.MortonXYZ(0)
-  # p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
-  # data = getBlosc(p)
-  # data = getBlosc(p)
-  # assert (data[0,0,100,100] == 1)
-
-  zidx_list = range(0,100)
+  # p.args = (x*512, (x+1)*512, y*512, (y+1)*512, z*16, (z+1)*16)
+  # image_data = np.ones([1,16,512,512], dtype=np.uint32) * 50
+  # response = postBlosc(p, image_data)
+  # # Posting zindex 0
+  # [x,y,z] = ndlib.MortonXYZ(0)
+  # p.args = (x*512, (x+1)*512, y*512, (y+1)*512, z*16, (z+1)*16)
+  # image_data = np.zeros([1,16,512,512], dtype=np.uint32)
+  # image_data[0,0,100,100] = 2
+  # response = postBlosc(p, image_data)
+  # # Posting zindex 0
+  # [x,y,z] = ndlib.MortonXYZ(0)
+  # p.args = (x*512, (x+1)*512, y*512, (y+1)*512, z*16, (z+1)*16)
+  # image_data = np.zeros([1,16,512,512], dtype=np.uint32)
+  # image_data[0,0,100,100] = 1
+  # response = postBlosc(p, image_data)
+  
+  zidx_list = range(0,1)
   random.shuffle(zidx_list)
   for i in zidx_list:
     [x,y,z] = ndlib.MortonXYZ(i)
-    p.args = (x*512, (x+1)*512, y*512, (y+1)*512, z*16, (z+1)*16)
-    p.args = (x*128, (x+1)*128, y*128, (y+1)*128, z*16, (z+1)*16)
+    p.args = (x*512*2, (x+1)*512*2, y*512*2, (y+1)*512, z*16, (z+1)*16)
     image_data = np.ones([1,16,512,512], dtype=np.uint32) * random.randint(0,255)
     response = postBlosc(p, image_data)
   
+  [x,y,z] = ndlib.MortonXYZ(0)
+  p.args = (x*512*2, (x+1)*512*2, y*512*2, (y+1)*512*2, z*16, (z+1)*16)
+  data = getBlosc(p)
+
+  # assert (data[0,0,100,100] == 1)
   # pass
   # # Posting zindex 0
   # [x,y,z] = ndlib.MortonXYZ(0)

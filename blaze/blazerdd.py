@@ -26,6 +26,8 @@ from blazecontext import BlazeContext
 from tasks import asyncPostBlosc
 blaze_context = BlazeContext()
 
+CUBE_DIM = [512,512,16]
+
 class BlazeRdd:
 
   def __init__(self, ds, ch, res):
@@ -42,7 +44,7 @@ class BlazeRdd:
       
     [zimagesz, yimagesz, ximagesz] = self.ds.imagesz[self.res]
     #[xcubedim, ycubedim, zcubedim] = cubedim = self.ds.cubedim[self.res]
-    [xcubedim,ycubedim,zcubedim] = cubedim = [512,512,16]
+    [xcubedim,ycubedim,zcubedim] = cubedim = CUBE_DIM
     [xoffset, yoffset, zoffset] = self.ds.offset[self.res]
     p = Params(self.ds, self.ch, self.res)
     
@@ -82,7 +84,7 @@ class BlazeRdd:
       ch = ds.getChannelObj(channel_name)
       [zimagesz, yimagesz, ximagesz] = ds.imagesz[res]
       #[xcubedim, ycubedim, zcubedim] = cubedim = ds.cubedim[res]
-      [xcubedim, ycubedim, zcubedim] = cubedim = [512,512,16]
+      [xcubedim, ycubedim, zcubedim] = cubedim = CUBE_DIM
       [xoffset, yoffset, zoffset] = ds.offset[res]
       
       # Calculating the corner and dimension
@@ -129,36 +131,41 @@ class BlazeRdd:
       # asyncPostBlosc((key, post_data))
       return post_data
 
-    # end of Spark functions
-    #self.br.deleteData(key_list[0])
-    blockkey_list = self.br.getBlockKeys(key_list)
+
+    # Get the block-keys for a given list of zindexes, for read trigger
+    # blockkey_list = self.br.getBlockKeys(key_list)
+    # Get all the block-keys, for memory trigger
+    key_list, blockkey_list = self.br.getAllBlockKeys()
+    # Sort the block_key list to order cubes on time
     blockkey_list.sort()
+    # Creating a RDD for blocks in Redis
     temp_rdd = blaze_context.sc.parallelize(blockkey_list)
+    
     # temp_rdd = temp_rdd.filter(lambda k : k is not None).map(lambda k : '_'.join(k.split('_')[:-1])).map(lambda k: breakCubes(*getBlock(k))).flatMap(lambda k : k)
     # temp_rdd = temp_rdd.filter(lambda k : k is not None).map(lambda k: breakCubes(*getBlock(k))).flatMap(lambda k : '_'.join(k.split('_')[:-1]))
-    temp_rdd = temp_rdd.filter(lambda k : k is not None).map(lambda k: breakCubes(*getBlock(k))).flatMap(lambda k : k)
-    # temp_rdd.filter(lambda k : k is not None).map(lambda k: breakCubes(*getBlock(k))).collect()
-    # dat1 = temp_rdd.collect()
     
-    # from blaze.urlmethods import getBlosc
+    # Filter - removes None
+    # Map - get block and break it into cubes
+    # Filter - removee None
+    # flatMap - maps keys and creates k,v pairs
+    temp_rdd = temp_rdd.filter(lambda k : k is not None).map(lambda k: breakCubes(*getBlock(k))).filter(lambda k : k is not None).flatMap(lambda k : k)
+    
+    # Creating a RDD for blocks to be fetched
+    # Read trigger
+    # zidx_rdd = blaze_context.sc.parallelize(key_list).map(getBlosc)
+    # Memory trigger
     zidx_rdd = blaze_context.sc.parallelize(key_list).map(getBlosc)
-    #dat2 = zidx_rdd.collect()
     
     def mergeCubes(data1, data2):
       """Merge Cubes"""
       
-      #vec_func = np.vectorize(lambda x,y: x if y == 0 else y)
-      start = time.time()
-      #if data1 is None:
-        #return data2
       import ndlib 
       data1 = blosc.unpack_array(data1)
       data2 = blosc.unpack_array(data2)
-      print "Serial",time.time()-start
-      start = time.time()
+      # Call vectorize function
+      # vec_func = np.vectorize(lambda x,y: x if y == 0 else y)
+      # Call ctype function
       ndlib.overwriteMerge_ctype(data1, data2)
-      #data = vec_func(data1, data2)
-      print "Vector",time.time()-start
       return blosc.pack_array(data1)
 
 
@@ -167,7 +174,11 @@ class BlazeRdd:
     #zidx_rdd.union(temp_rdd).map(lambda (x,y):(x,blosc.unpack_array(y))).combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda (k,v) : ((k,p),blosc.pack_array(v))).map(postBlosc2).collect()
     #zidx_rdd.union(temp_rdd).map(lambda (x,y):(x,blosc.unpack_array(y))).combineByKey(lambda x: x, np.vectorize(lambda x,y: x if y == 0 else y), np.vectorize(lambda x,y: x if y == 0 else y)).map(lambda (x,y):(x,blosc.pack_array(y))).map(postBlosc2).collect()
     
-    # import pdb; pdb.set_trace()
-    merged_data = zidx_rdd.union(temp_rdd).combineByKey(lambda x: x, mergeCubes, mergeCubes).map(postBlosc2).collect()
+    # Union - union of the 2 lists of fetched cubes and cubes in redis
+    # combineByKey - merge the cubes based on our merge function
+    # sortByKey - so we can do sequential writes in the backend
+    # map - call celery function to post in background
+    merged_data = zidx_rdd.union(temp_rdd).combineByKey(lambda x: x, mergeCubes, mergeCubes).sortByKey().map(postBlosc2).collect()
+
+    # return the merged cube back to reader
     return merged_data[0]
-    # zidx_rdd.union(temp_rdd).combineByKey(lambda x: x, mergeCubes, mergeCubes).collect()

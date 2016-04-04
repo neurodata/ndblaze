@@ -171,7 +171,7 @@ def main():
     csv_writer = csv.writer(csv_file, delimiter=',')
     
     # iterating over data size
-    for data_size in range(result.data_size, result.data_size+1, 1):
+    for data_size in range(1, result.data_size+1, 1):
       
       # setting the time value list to zero
       time_values = []
@@ -184,9 +184,11 @@ def main():
     
       # from pprint import pprint
       # pprint(bt.fetch_list)
+      # continue
       
       for iter_number in range(result.number_of_iterations):
         
+        random.shuffle(bt.fetch_list)
         dropCache()
         start_time = time.time()
         
@@ -197,7 +199,14 @@ def main():
         
         time_values.append(time.time()-start_time)
       
-      csv_writer.writerow([math.pow(2,data_size-3)]+time_values)
+      if bt.datatype == np.uint8:
+        actual_size = [math.pow(2,data_size-3)]
+      elif bt.datatype == np.uint16:
+        actual_size = [math.pow(2,data_size-2)]
+      elif bt.datatype == np.uint32:
+        actual_size = [math.pow(2,data_size-1)]
+
+      csv_writer.writerow(actual_size+time_values)
 
 
 if __name__ == '__main__':
