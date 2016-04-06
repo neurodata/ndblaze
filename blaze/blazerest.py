@@ -19,7 +19,8 @@ import numpy as np
 from contextlib import closing
 from operator import div, mul, add, sub, mod
 
-from blazeredis import BlazeRedis
+# from blazeredis import BlazeRedis
+from blazerediscluster import BlazeRedis
 from ndlib import XYZMorton, MortonXYZ
 from dataset import Dataset
 
@@ -199,8 +200,6 @@ def postBloscData(webargs, post_data):
     raise
 
   # Fetaching the info from nd backend
-  import time
-  start_time = time.time()
   ds = Dataset(token)
   ch = ds.getChannelObj(channel_name)
  
@@ -229,10 +228,7 @@ def postBloscData(webargs, post_data):
       for x in range(xnumcubes):
         key_list.append( blaze_redis.generateSIKey(XYZMorton(map(add, start, [x,y,z]))) )
  
-  print "Preprocessing:", time.time()-start_time
-  start3 = time.time()
   blaze_redis.putData( (x1,x2,y1,y2,z1,z2), post_data, key_list )
-  print "Write:",time.time()-start3
 
 
 def getBloscData(webargs):

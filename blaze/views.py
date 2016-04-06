@@ -34,10 +34,7 @@ class BlazeView(View):
     """RESTful URL for posting data"""
 
     try:
-      import time
-      start = time.time()
       postBloscData(webargs, request.body)
-      print "FINAL", time.time()-start
       return HttpResponse("Successful", content_type="text/html")
 
     except Exception, e:

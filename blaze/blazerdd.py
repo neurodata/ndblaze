@@ -18,7 +18,8 @@ import numpy as np
 from operator import itemgetter, div, add, sub, mod, mul
 
 from dataset import Dataset
-from blazeredis import BlazeRedis
+# from blazeredis import BlazeRedis
+from blazerediscluster import BlazeRedis
 from ndlib import MortonXYZ, XYZMorton, overwriteMerge_ctype
 from urlmethods import postBlosc, getBlosc
 from params import Params
