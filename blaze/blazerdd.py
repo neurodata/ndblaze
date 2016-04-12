@@ -179,7 +179,8 @@ class BlazeRdd:
     # combineByKey - merge the cubes based on our merge function
     # sortByKey - so we can do sequential writes in the backend
     # map - call celery function to post in background
-    merged_data = zidx_rdd.union(temp_rdd).combineByKey(lambda x: x, mergeCubes, mergeCubes).sortByKey().map(postBlosc2).collect()
+    # import pdb; pdb.set_trace()
+    merged_data = zidx_rdd.union(temp_rdd).combineByKey(lambda x: x, mergeCubes, mergeCubes).sortByKey(ascending=True, keyfunc=lambda k: int(k.split('_')[-1])).map(postBlosc2).collect()
 
     # return the merged cube back to reader
     return merged_data[0]

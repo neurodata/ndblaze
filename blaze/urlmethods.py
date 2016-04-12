@@ -55,12 +55,16 @@ def postBlosc((key, post_data)):
   post_args = (x*xcubedim, (x+1)*xcubedim, y*ycubedim, (y+1)*ycubedim, z*zcubedim, (z+1)*zcubedim)
   
   # KL TODO Support for timeseries data
-  url = 'http://{}/ca/{}/{}/blosc/{}/{},{}/{},{}/{},{}/'.format(SITE_HOST, token, channel, res, *post_args)
-
+  # url = 'http://{}/ca/{}/{}/blosc/{}/{},{}/{},{}/{},{}/'.format(SITE_HOST, token, channel, res, *post_args)
+  url = 'http://{}/ca/{}/{}/blaze/{}/{},{}/{},{}/{},{}/'.format(SITE_HOST, token, channel, res, *post_args)
+  
+  import time
   # Building the post request and checking it posts correctly
   try:
     req = urllib2.Request(url, post_data)
     response = urllib2.urlopen(req)
+    with open('/home/ubuntu/time', 'a') as f:
+      f.write('{},{}\n'.format(zindex, time.time()))
   except urllib2.HTTPError, e:
     print "Error. {}".format(e)
     raise 
