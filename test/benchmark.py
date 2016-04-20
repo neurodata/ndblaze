@@ -36,9 +36,7 @@ p.token = "blaze1"
 p.resolution = 0
 p.channels = ['image']
 p.window = [0,0]
-#p.channel_type = "annotation"
 p.channel_type = "image"
-#p.datatype = "uint32"
 p.datatype = "uint8"
 SIZE = 128
 ZSIZE = 16
@@ -51,8 +49,6 @@ def Benchmark(zidx):
   p.args = (x*SIZE, (x+1)*SIZE, y*SIZE, (y+1)*SIZE, z*ZSIZE, (z+1)*ZSIZE)
   image_data = np.ones([1,16,SIZE,SIZE], dtype=np.uint8) * random.randint(0,255)
   response = PostBlosc(p, image_data)
-  #response = PostNPZ(p, image_data)
-
 
 def PostHDF5 (p, post_data):
   """Post data using the hdf5 interface"""
@@ -77,6 +73,7 @@ def PostHDF5 (p, post_data):
     start = time.time()
     response = urllib2.urlopen(req)
     print time.time()-start
+    tmpfile.close()
     return response
   except urllib2.HTTPError,e:
     return e
