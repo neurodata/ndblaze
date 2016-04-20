@@ -61,6 +61,7 @@ void exceptionDense ( uint32_t * , uint32_t * , int * );
 
 // Declaring the exceptionDense function
 void overwriteDense ( uint32_t * , uint32_t * , int * );
+void overwriteMerge ( uint32_t * , uint32_t * , int );
 
 // Declaring the zoomOutData function
 void zoomOutData ( uint32_t * , uint32_t * , int * , int );

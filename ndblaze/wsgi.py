@@ -12,17 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import absolute_import
+"""
+WSGI config for ndblaze project.
+
+It exposes the WSGI callable as a module-level variable named ``application``.
+
+For more information on this file, see
+https://docs.djangoproject.com/en/1.8/howto/deployment/wsgi/
+"""
 
 import os
-from celery import Celery
-from django.conf import settings
 
-# set the default Django settings module for the 'celery' program.
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ocpblaze.settings')
+from django.core.wsgi import get_wsgi_application
 
-app = Celery('blaze')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ndblaze.settings")
 
-# Using a string here means the worker will not have to pickle the object when using Windows.
-app.config_from_object('django.conf:settings')
-app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
+application = get_wsgi_application()

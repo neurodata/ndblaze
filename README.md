@@ -1,3 +1,8 @@
-Fast ingest using buffered writes for Open Connectome Project Web Services. [Visit ocp.me](http://ocp.me)
+Sequentializing Random Writes to a Spatial Database for Neurodata Web Services(formerly called the Open Connectome Project).
 
-All code in this repository is citable by [DOI](http://dx.doi.org/10.5281/zenodo.9992)
+[![Neurodata.io](https://img.shields.io/badge/Visit-neurodata.io-ff69b4.svg)](http://neurodata.io/)
+[![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.19972.svg)](http://dx.doi.org/10.5281/zenodo.19972)
+
+#### Architecture
+
+![](./docs/images/ndblaze_architecture.png)

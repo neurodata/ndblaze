@@ -14,6 +14,7 @@
 
 import os
 import MySQLdb
+
 from django.conf import settings
 
 class BlazeDB():
@@ -21,9 +22,12 @@ class BlazeDB():
 
   def __init__(self):
     """Intialize the database connection"""
-
+    
     try:
-      self.conn = MySQLdb.connect(host = '', user = settings.DATABASES['default']['USER'], passwd = settings.DATABASES['default']['PASSWORD'], db = settings.DBNAME)
+      # pass
+      from ndblaze.settings import SITE_HOST, USER, PASSWORD, DBNAME, MYSQL_SERVER
+      # self.conn = MySQLdb.connect(host = '', user = settings.DATABASES['default']['USER'], passwd = settings.DATABASES['default']['PASSWORD'], db = settings.DBNAME)
+      self.conn = MySQLdb.connect(host = MYSQL_SERVER, user = USER, passwd = PASSWORD, db = DBNAME)
     except MySQLdb.Error, e:
       raise
 

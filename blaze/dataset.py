@@ -13,12 +13,10 @@
 # limitations under the License.
 
 import json
-from urlmethods import getURL
-from django.conf import settings 
-SITE_HOST = settings.SITE_HOST
 
-from ocpvariables import OCP_scalingtoint, ZSLICES, ISOTROPIC
-from blazedb import BlazeDB
+from blazedb import BlazeDB 
+from urlmethods import getURL
+from ndtype import ND_scalingtoint, ZSLICES, ISOTROPIC
 
 class Dataset:
 
@@ -41,13 +39,14 @@ class Dataset:
   def fetchDataset (self):
     """Fetch a dataset to the list of cacheable datasets"""
 
-    f = getURL('http://{}/ocpca/{}/info/'.format(SITE_HOST, self.token))
+    from ndblaze.settings import SITE_HOST
+    f = getURL('http://{}/ca/{}/info/'.format(SITE_HOST, self.token))
     info = json.loads(f.read())
     self.ximagesz, self.yimagesz, self.zimagesz = info['dataset']['imagesize']['0']
     self.xoffset, self.yoffset, self.zoffset = info['dataset']['offset']['0']
     self.xvoxelres, self.yvoxelres, self.zvoxelres = info['dataset']['voxelres']['0']
     self.scalinglevels = info['dataset']['scalinglevels']
-    self.scalingoption = OCP_scalingtoint[info['dataset']['scaling']]
+    self.scalingoption = ND_scalingtoint[info['dataset']['scaling']]
     self.starttime, self.endtime = info['dataset']['timerange']
 
     for channel_name in info['channels'].keys():
@@ -126,7 +125,7 @@ class Dataset:
         return ch
 
     #logger.warning("Channel {} does not exist for the dataset {}".format(channel_name, self.dataset_name))
-    #raise OCPTILECACHEError("Channel {} does not exist for the dataset {}".format(channel_name, self.dataset_name))
+    #raise NDTILECACHEError("Channel {} does not exist for the dataset {}".format(channel_name, self.dataset_name))
 
 
 class Channel:

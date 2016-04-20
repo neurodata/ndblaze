@@ -18,7 +18,7 @@ import sys
 import MySQLdb
 
 sys.path += [os.path.abspath('../')]
-os.environ['DJANGO_SETTINGS_MODULE'] = 'ocpblaze.settings'
+os.environ['DJANGO_SETTINGS_MODULE'] = 'ndblaze.settings'
 from django.conf import settings
 
 class Installer:
@@ -27,7 +27,7 @@ class Installer:
     pass
 
   def createDatabase(self):
-    """Creating the database for ocpblaze"""
+    """Creating the database for ndblaze"""
     
     try:
       self.conn = MySQLdb.connect (host = settings.DATABASES['default']['HOST'], user = settings.DATABASES['default']['USER'], passwd = settings.DATABASES['default']['PASSWORD'])

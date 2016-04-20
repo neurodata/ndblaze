@@ -13,18 +13,225 @@
 # limitations under the License.
 
 import re
-import h5py
 import tempfile
+import blosc
 import numpy as np
 from contextlib import closing
 from operator import div, mul, add, sub, mod
 
-#from blazecontext import BlazeContext
-from blaze import rdd_map
-from ocplib import XYZMorton, MortonXYZ
+# from blazeredis import BlazeRedis
+from blazerediscluster import BlazeRedis
+from ndlib import XYZMorton, MortonXYZ
 from dataset import Dataset
 
-def getHDF5Data(webargs):
+# def getHDF5Data(webargs):
+  # """Return a region of cutout"""
+
+  # import h5py
+  # try:
+    # # arguments of format token/channel/service/resolution/x,x/y,y/z,z/
+    # m = re.match("(\w+)/(\w+)/(\w+)/(\d+)/(\d+),(\d+)/(\d+),(\d+)/(\d+),(\d+)/", webargs)
+    # [token, channel_name, service] = [i for i in m.groups()[:3]]
+    # [res, x1, x2, y1, y2, z1, z2] = [int(i) for i in m.groups()[3:]]
+  # except Exception, e:
+    # print "Wrong arguments"
+    # raise
+  
+  # # Fetaching the info from nd backend
+  # ds = Dataset(token)
+  # ch = ds.getChannelObj(channel_name)
+  # [zimagesz, yimagesz, ximagesz] = ds.imagesz[res]
+  # [xcubedim, ycubedim, zcubedim] = cubedim = ds.cubedim[res]
+  # [xoffset, yoffset, zoffset] = ds.offset[res]
+
+  # # KL TODO Check the bounds here
+
+  # # Calculating the corner and dimension
+  # corner = [x1, y1, z1]
+  # dim = map(sub, [x2,y2,z2], corner)
+
+  # # Round to the nearest largest cube in all dimensions
+  # [xstart, ystart, zstart] = start = map(div, corner, cubedim)
+
+  # znumcubes = (corner[2]+dim[2]+zcubedim-1)/zcubedim - zstart
+  # ynumcubes = (corner[1]+dim[1]+ycubedim-1)/ycubedim - ystart
+  # xnumcubes = (corner[0]+dim[0]+xcubedim-1)/xcubedim - xstart
+  # numcubes = [xnumcubes, ynumcubes, znumcubes]
+
+  # voxarray = np.empty(map(mul, numcubes[::-1], cubedim[::-1]), dtype=np.uint8)
+
+  # # Generate a list of zindex to cut
+  # zidx_list = []
+  # for z in range(znumcubes):
+    # for y in range(ynumcubes):
+      # for x in range(xnumcubes):
+        # zidx_list.append(XYZMorton(map(add, [x,y,z], start)))
+  
+  # zidx_list.sort()
+  # lowxyz = MortonXYZ(zidx_list[0])
+
+  # channel_rdd = rdd_map.getBlazeRdd(ds, ch, res)
+  # for zidx,cube_data in channel_rdd.getData(zidx_list):
+    # curxyz = MortonXYZ(zidx)
+    # offset = map(mul, map(sub, curxyz, lowxyz), cube_data.shape[::-1])
+    # end = map(add, offset, cube_data.shape[::-1])
+    # # Add the data to a larger voxarray
+    # voxarray[offset[2]:end[2], offset[1]:end[1], offset[0]:end[0]] = cube_data[:]
+
+  # # trim the data
+  # if map(mod, dim, cubedim) == [0,0,0] and map(mod, corner, cubedim) == [0,0,0]:
+    # pass
+  # else:
+    # offset = (map(mod, corner, cubedim))
+    # end = map(add, offset, dim)
+    # voxarray = voxarray[offset[2]:end[2], offset[1]:end[2], offset[0]:end[2]]
+
+  # # Construct an HDF5 file
+  # try:
+    # tmpfile = tempfile.NamedTemporaryFile()
+    # f5out = h5py.File(tmpfile.name, driver='core', backing_store=True)
+
+    # for channel_name in channel_name.split(','):
+      # changrp = f5out.create_group("{}".format(channel_name))
+      # changrp.create_dataset("CUTOUT", tuple(voxarray.shape), voxarray.dtype, compression='gzip', data=voxarray)
+      # changrp.create_dataset("CHANNEL_TYPE", (1,), dtype=h5py.special_dtype(vlen=str), data='image')
+      # changrp.create_dataset("DATATYPE", (1,), dtype=h5py.special_dtype(vlen=str), data='uint8')
+  # except Exception, e:
+    # fh5out.close()
+    # tmpfile.close()
+    # raise
+
+  # f5out.close()
+  # tmpfile.seek(0)
+
+  # return tmpfile.read()
+
+
+# def postHDF5Data(webargs, post_data):
+  # """Accept a posted region of cutout"""
+
+  # try:
+    # # arguments of format token/channel/service/resolution/x,x/y,y/z,z/
+    # m = re.match("(\w+)/(\w+)/(\w+)/(\d+)/(\d+),(\d+)/(\d+),(\d+)/(\d+),(\d+)/", webargs)
+    # [token, channel_name, service] = [i for i in m.groups()[:3]]
+    # [res, x1, x2, y1, y2, z1, z2] = [int(i) for i in m.groups()[3:]]
+  # except Exception, e:
+    # print "Wrong arguments"
+    # raise
+
+  # with closing (tempfile.NamedTemporaryFile()) as tmpfile:
+    
+    # try:
+      # # Opening the hdf5 file
+      # tmpfile.write(post_data)
+      # tmpfile.seek(0)
+      # h5f = h5py.File(tmpfile.name, driver='core', backing_store=False)
+    
+    # except Exception, e:
+      # print "Error opening HDF5 file"
+      # raise
+
+    # # KL TODO Make so that we take in multiple channels
+    # import time
+    # start_time = time.time()
+    # voxarray = h5f.get(channel_name)['CUTOUT'].value
+    # print "HDF5:", time.time()-start_time
+    # # KL TODO check if this matches with backend
+    # h5_datatype = h5f.get(channel_name)['DATATYPE'].value[0]
+    # h5_channeltype = h5f.get(channel_name)['CHANNELTYPE'].value[0]
+    
+    # # Fetaching the info from nd backend
+    # start_time = time.time()
+    # ds = Dataset(token)
+    # ch = ds.getChannelObj(channel_name)
+    # [zimagesz, yimagesz, ximagesz] = ds.imagesz[res]
+    # [xcubedim, ycubedim, zcubedim] = cubedim = ds.cubedim[res]
+    # [xoffset, yoffset, zoffset] = ds.offset[res]
+    
+    # # KL TODO Check the bounds here
+    
+    # # Calculating the corner and dimension
+    # corner = [x1, y1, z1]
+    # dim = voxarray.shape[::-1]
+
+    # # Round to the nearest largest cube in all dimensions
+    # [xstart, ystart, zstart] = start = map(div, corner, cubedim)
+
+    # znumcubes = (corner[2]+dim[2]+zcubedim-1)/zcubedim - zstart
+    # ynumcubes = (corner[1]+dim[1]+ycubedim-1)/ycubedim - ystart
+    # xnumcubes = (corner[0]+dim[0]+xcubedim-1)/xcubedim - xstart
+    # numcubes = [xnumcubes, ynumcubes, znumcubes]
+    # offset = map(mod, corner, cubedim)
+
+    # data_buffer = np.zeros(map(mul, numcubes, cubedim)[::-1], dtype=voxarray.dtype)
+    # end = map(add, offset, dim)
+    # data_buffer[offset[2]:end[2], offset[1]:end[1], offset[0]:end[0]] = voxarray
+
+    # cube_list = []
+    # for z in range(znumcubes):
+      # for y in range(ynumcubes):
+        # for x in range(xnumcubes):
+          # zidx = XYZMorton(map(add, start, [x,y,z]))
+         
+          # # Parameters in the cube slab
+          # index = map(mul, cubedim, [x,y,z])
+          # end = map(add, index, cubedim)
+
+          # cube_data = data_buffer[index[2]:end[2], index[1]:end[1], index[0]:end[0]]
+          # cube_list.append((zidx, cube_data))
+    
+    # print "Preprocessing:", time.time()-start_time
+    # bredis = BlazeRedis(ds.token, ch.getChannelName(), res)
+    # start3 = time.time()
+    # bredis.writeData(cube_list)
+    # print "Write:",time.time()-start3
+
+
+def postBloscData(webargs, post_data):
+  """Accept a posted region of cutout"""
+  
+  try:
+    # arguments of format token/channel/service/resolution/x,x/y,y/z,z/
+    m = re.match("(\w+)/(\w+)/(\w+)/(\d+)/(\d+),(\d+)/(\d+),(\d+)/(\d+),(\d+)/", webargs)
+    [token, channel_name, service] = [i for i in m.groups()[:3]]
+    [res, x1, x2, y1, y2, z1, z2] = [int(i) for i in m.groups()[3:]]
+  except Exception, e:
+    print "Wrong arguments"
+    raise
+
+  # Fetaching the info from nd backend
+  ds = Dataset(token)
+  ch = ds.getChannelObj(channel_name)
+ 
+  [zimagesz, yimagesz, ximagesz] = ds.imagesz[res]
+  #[xcubedim, ycubedim, zcubedim] = cubedim = ds.cubedim[res]
+  [xcubedim, ycubedim, zcubedim] = cubedim = [512,512,16]
+  [xoffset, yoffset, zoffset] = ds.offset[res]
+  
+  
+  # Calculating the corner and dimension
+  corner = [x1, y1, z1]
+  dim = [x2-x1,y2-y1,z2-z1]
+
+  # Round to the nearest largest cube in all dimensions
+  [xstart, ystart, zstart] = start = map(div, corner, cubedim)
+
+  znumcubes = (corner[2]+dim[2]+zcubedim-1)/zcubedim - zstart
+  ynumcubes = (corner[1]+dim[1]+ycubedim-1)/ycubedim - ystart
+  xnumcubes = (corner[0]+dim[0]+xcubedim-1)/xcubedim - xstart
+  numcubes = [xnumcubes, ynumcubes, znumcubes]
+
+  blaze_redis = BlazeRedis(ds.token, ch.getChannelName(), res)
+  key_list = []
+  for z in range(znumcubes):
+    for y in range(ynumcubes):
+      for x in range(xnumcubes):
+        key_list.append( blaze_redis.generateSIKey(XYZMorton(map(add, start, [x,y,z]))) )
+ 
+  blaze_redis.putData( (x1,x2,y1,y2,z1,z2), post_data, key_list )
+
+
+def getBloscData(webargs):
   """Return a region of cutout"""
 
   try:
@@ -36,165 +243,16 @@ def getHDF5Data(webargs):
     print "Wrong arguments"
     raise
   
-  # Fetaching the info from OCP backend
+  # Fetaching the info from nd backend
   ds = Dataset(token)
   ch = ds.getChannelObj(channel_name)
   [zimagesz, yimagesz, ximagesz] = ds.imagesz[res]
-  [xcubedim, ycubedim, zcubedim] = cubedim = ds.cubedim[res]
+  #[xcubedim, ycubedim, zcubedim] = cubedim = ds.cubedim[res]
+  [xcubedim, ycubedim, zcubedim] = cubedim = [512,512,16]
   [xoffset, yoffset, zoffset] = ds.offset[res]
 
-  # KL TODO Check the bounds here
-
-  # Calculating the corner and dimension
-  corner = [x1, y1, z1]
-  dim = map(sub, [x2,y2,z2], corner)
-
-  # Round to the nearest largest cube in all dimensions
-  [xstart, ystart, zstart] = start = map(div, corner, cubedim)
-
-  znumcubes = (corner[2]+dim[2]+zcubedim-1)/zcubedim - zstart
-  ynumcubes = (corner[1]+dim[1]+ycubedim-1)/ycubedim - ystart
-  xnumcubes = (corner[0]+dim[0]+xcubedim-1)/xcubedim - xstart
-  numcubes = [xnumcubes, ynumcubes, znumcubes]
-
-  voxarray = np.empty(map(mul, numcubes[::-1], cubedim[::-1]), dtype=np.uint8)
-
-  # Generate a list of zindex to cut
-  zidx_list = []
-  for z in range(znumcubes):
-    for y in range(ynumcubes):
-      for x in range(xnumcubes):
-        zidx_list.append(XYZMorton(map(add, [x,y,z], start)))
+  from blazerdd import BlazeRdd
+  br = BlazeRdd(ds, ch, res)
+  data = br.loadData(x1,x2,y1,y2,z1,z2)
   
-  zidx_list.sort()
-  lowxyz = MortonXYZ(zidx_list[0])
-
-  channel_rdd = rdd_map.getBlazeRdd(ds, ch, res)
-  for zidx,cube_data in channel_rdd.getData(zidx_list):
-    curxyz = MortonXYZ(zidx)
-    offset = map(mul, map(sub, curxyz, lowxyz), cube_data.shape[::-1])
-    end = map(add, offset, cube_data.shape[::-1])
-    # Add the data to a larger voxarray
-    voxarray[offset[2]:end[2], offset[1]:end[1], offset[0]:end[0]] = cube_data[:]
-
-  # trim the data
-  if map(mod, dim, cubedim) == [0,0,0] and map(mod, corner, cubedim) == [0,0,0]:
-    pass
-  else:
-    offset = (map(mod, corner, cubedim))
-    end = map(add, offset, dim)
-    voxarray = voxarray[offset[2]:end[2], offset[1]:end[2], offset[0]:end[2]]
-
-  # Construct an HDF5 file
-  try:
-    tmpfile = tempfile.NamedTemporaryFile()
-    f5out = h5py.File(tmpfile.name, driver='core', backing_store=True)
-
-    for channel_name in channel_name.split(','):
-      changrp = f5out.create_group("{}".format(channel_name))
-      changrp.create_dataset("CUTOUT", tuple(voxarray.shape), voxarray.dtype, compression='gzip', data=voxarray)
-      changrp.create_dataset("CHANNEL_TYPE", (1,), dtype=h5py.special_dtype(vlen=str), data='image')
-      changrp.create_dataset("DATATYPE", (1,), dtype=h5py.special_dtype(vlen=str), data='uint8')
-  except Exception, e:
-    fh5out.close()
-    tmpfile.close()
-    raise
-
-  f5out.close()
-  tmpfile.seek(0)
-
-  return tmpfile.read()
-
-
-def postHDF5Data(webargs, post_data):
-  """Accept a posted region of cutout"""
-
-  try:
-    # arguments of format token/channel/service/resolution/x,x/y,y/z,z/
-    m = re.match("(\w+)/(\w+)/(\w+)/(\d+)/(\d+),(\d+)/(\d+),(\d+)/(\d+),(\d+)/", webargs)
-    [token, channel_name, service] = [i for i in m.groups()[:3]]
-    [res, x1, x2, y1, y2, z1, z2] = [int(i) for i in m.groups()[3:]]
-  except Exception, e:
-    print "Wrong arguments"
-    raise
-
-  # testing
-  #ds = Dataset(token)
-  #ch = ds.getChannelObj(channel_name)
-  #channel_rdd = rdd_map.getBlazeRdd(ds, ch, res)
-  #channel_rdd.insertData( [((token,channel_name,res,x1,x2,y1,y2,z1,z2),post_data)] )
-  # testing ends
-
-
-  with closing (tempfile.NamedTemporaryFile()) as tmpfile:
-    
-    try:
-      # Opening the hdf5 file
-      tmpfile.write(post_data)
-      tmpfile.seek(0)
-      h5f = h5py.File(tmpfile.name, driver='core', backing_store=False)
-    
-    except Exception, e:
-      print "Error opening HDF5 file"
-      raise
-
-    # KL TODO Make so that we take in multiple channels
-    import time
-    start_time = time.time()
-    voxarray = h5f.get(channel_name)['CUTOUT'].value
-    print "HDF5:", time.time()-start_time
-    # KL TODO check if this matches with backend
-    h5_datatype = h5f.get(channel_name)['DATATYPE'].value[0]
-    h5_channeltype = h5f.get(channel_name)['CHANNELTYPE'].value[0]
-    
-    # Fetaching the info from OCP backend
-    start_time = time.time()
-    ds = Dataset(token)
-    ch = ds.getChannelObj(channel_name)
-    [zimagesz, yimagesz, ximagesz] = ds.imagesz[res]
-    [xcubedim, ycubedim, zcubedim] = cubedim = ds.cubedim[res]
-    [xoffset, yoffset, zoffset] = ds.offset[res]
-    
-    # KL TODO Check the bounds here
-    
-    # Calculating the corner and dimension
-    corner = [x1, y1, z1]
-    dim = voxarray.shape[::-1]
-
-    # Round to the nearest largest cube in all dimensions
-    [xstart, ystart, zstart] = start = map(div, corner, cubedim)
-
-    znumcubes = (corner[2]+dim[2]+zcubedim-1)/zcubedim - zstart
-    ynumcubes = (corner[1]+dim[1]+ycubedim-1)/ycubedim - ystart
-    xnumcubes = (corner[0]+dim[0]+xcubedim-1)/xcubedim - xstart
-    numcubes = [xnumcubes, ynumcubes, znumcubes]
-    offset = map(mod, corner, cubedim)
-
-    data_buffer = np.zeros(map(mul, numcubes, cubedim)[::-1], dtype=voxarray.dtype)
-    end = map(add, offset, dim)
-    data_buffer[offset[2]:end[2], offset[1]:end[1], offset[0]:end[0]] = voxarray
-
-    cube_list = []
-    for z in range(znumcubes):
-      for y in range(ynumcubes):
-        for x in range(xnumcubes):
-          zidx = XYZMorton(map(add, start, [x,y,z]))
-         
-          # Parameters in the cube slab
-          index = map(mul, cubedim, [x,y,z])
-          end = map(add, index, cubedim)
-
-          cube_data = data_buffer[index[2]:end[2], index[1]:end[1], index[0]:end[0]]
-          cube_list.append((zidx, cube_data))
-    
-    print "Preprocessing:", time.time()-start_time
-    channel_rdd = rdd_map.getBlazeRdd(ds, ch, res)
-    channel_rdd.insertData(cube_list)
-
-  def CeleryWorker(self):
-
-    try:
-      for channel_rdd in rdd_map.getAll():
-        channel_rdd.flushData()
-    except Exception, e:
-      raise
+  return data
