@@ -58,7 +58,7 @@ class Test_Blosc:
   # image_data[0,0,100,100] = 1
   # response = postBlosc(p, image_data)
   
-  zidx_list = range(0,1000)
+  zidx_list = range(0,2)
   random.shuffle(zidx_list)
   # zidx_list = [random.randint(0,1000) for i in zidx_list]
   for i in zidx_list:
@@ -68,7 +68,7 @@ class Test_Blosc:
     response = postBlosc(p, image_data)
   
   [x,y,z] = ndlib.MortonXYZ(0)
-  p.args = (x*512, (x+1)*512, y*512, (y+1)*512, z*16, (z+1)*16)
+  p.args = (x*512, (x+1)*512*2, y*512, (y+1)*512*2, z*16, (z+1)*16)
   data = getBlosc(p)
 
   # assert (data[0,0,100,100] == 1)

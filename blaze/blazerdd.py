@@ -18,26 +18,27 @@ import numpy as np
 from operator import itemgetter, div, add, sub, mod, mul
 
 from dataset import Dataset
-# from blazeredis import BlazeRedis
-from blazerediscluster import BlazeRedis
+from blazeredis import BlazeRedis
+# from blazerediscluster import BlazeRedis
 from ndlib import MortonXYZ, XYZMorton, overwriteMerge_ctype
 from urlmethods import postBlosc, getBlosc
 from params import Params
-from blazecontext import BlazeContext
+# from blazecontext import BlazeContext
 from tasks import asyncPostBlosc
-blaze_context = BlazeContext()
+# blaze_context = BlazeContext()
 
 CUBE_DIM = [512,512,16]
 
 class BlazeRdd:
 
-  def __init__(self, ds, ch, res):
+  def __init__(self, ds, ch, res, blaze_context):
     """Create an empty rdd"""
    
     self.ds = ds
     self.ch = ch
     self.res = res
     self.br = BlazeRedis(ds.token, ch.getChannelName(), res)
+    self.blaze_context = blaze_context
 
 
   def loadData(self, x1,x2,y1,y2,z1,z2):
@@ -132,15 +133,15 @@ class BlazeRdd:
       # asyncPostBlosc((key, post_data))
       return post_data
 
-
     # Get the block-keys for a given list of zindexes, for read trigger
-    # blockkey_list = self.br.getBlockKeys(key_list)
+    blockkey_list = self.br.getBlockKeys(key_list)
     # Get all the block-keys, for memory trigger
-    key_list, blockkey_list = self.br.getAllBlockKeys()
+    # key_list, blockkey_list = self.br.getAllBlockKeys()
     # Sort the block_key list to order cubes on time
     blockkey_list.sort()
     # Creating a RDD for blocks in Redis
-    temp_rdd = blaze_context.sc.parallelize(blockkey_list)
+    # from blaze import blaze_context
+    temp_rdd = self.blaze_context.sc.parallelize(blockkey_list)
     
     # temp_rdd = temp_rdd.filter(lambda k : k is not None).map(lambda k : '_'.join(k.split('_')[:-1])).map(lambda k: breakCubes(*getBlock(k))).flatMap(lambda k : k)
     # temp_rdd = temp_rdd.filter(lambda k : k is not None).map(lambda k: breakCubes(*getBlock(k))).flatMap(lambda k : '_'.join(k.split('_')[:-1]))
@@ -155,7 +156,7 @@ class BlazeRdd:
     # Read trigger
     # zidx_rdd = blaze_context.sc.parallelize(key_list).map(getBlosc)
     # Memory trigger
-    zidx_rdd = blaze_context.sc.parallelize(key_list).map(getBlosc)
+    zidx_rdd = self.blaze_context.sc.parallelize(key_list).map(getBlosc)
     
     def mergeCubes(data1, data2):
       """Merge Cubes"""
@@ -180,7 +181,8 @@ class BlazeRdd:
     # sortByKey - so we can do sequential writes in the backend
     # map - call celery function to post in background
     # import pdb; pdb.set_trace()
-    merged_data = zidx_rdd.union(temp_rdd).combineByKey(lambda x: x, mergeCubes, mergeCubes).sortByKey(ascending=True, keyfunc=lambda k: int(k.split('_')[-1])).map(postBlosc2).collect()
+    # merged_data = zidx_rdd.union(temp_rdd).combineByKey(lambda x: x, mergeCubes, mergeCubes).sortByKey(ascending=True, keyfunc=lambda k: int(k.split('_')[-1])).map(postBlosc2).collect()
+    merged_data = zidx_rdd.union(temp_rdd).combineByKey(lambda x: x, mergeCubes, mergeCubes).sortByKey(ascending=True, keyfunc=lambda k: int(k.split('_')[-1])).collect()
 
     # return the merged cube back to reader
-    return merged_data[0]
+    return merged_data

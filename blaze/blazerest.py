@@ -19,10 +19,11 @@ import numpy as np
 from contextlib import closing
 from operator import div, mul, add, sub, mod
 
-# from blazeredis import BlazeRedis
-from blazerediscluster import BlazeRedis
+from blazeredis import BlazeRedis
+# from blazerediscluster import BlazeRedis
 from ndlib import XYZMorton, MortonXYZ
 from dataset import Dataset
+
 
 # def getHDF5Data(webargs):
   # """Return a region of cutout"""
@@ -231,7 +232,7 @@ def postBloscData(webargs, post_data):
   blaze_redis.putData( (x1,x2,y1,y2,z1,z2), post_data, key_list )
 
 
-def getBloscData(webargs):
+def getBloscData(webargs, blaze_context):
   """Return a region of cutout"""
 
   try:
@@ -252,7 +253,7 @@ def getBloscData(webargs):
   [xoffset, yoffset, zoffset] = ds.offset[res]
 
   from blazerdd import BlazeRdd
-  br = BlazeRdd(ds, ch, res)
+  br = BlazeRdd(ds, ch, res, blaze_context)
   data = br.loadData(x1,x2,y1,y2,z1,z2)
   
   return data

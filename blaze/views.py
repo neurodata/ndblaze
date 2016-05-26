@@ -20,14 +20,20 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import View
 
 from blazerest import postBloscData, getBloscData
+from sparkdir import blaze_context
+
+import logging
+logger=logging.getLogger("ndblaze")
 
 class BlazeView(View):
 
   def get(self, request, webargs):
 
     try:
-      return HttpResponse(getBloscData(webargs), content_type="product/blosc")
+      return HttpResponse(getBloscData(webargs, blaze_context), content_type="product/blosc")
     except Exception, e:
+      logger.error(e)
+      # logger.warning("{}".format(e))
       return HttpResponseBadRequest()
 
   def post(self, request, webargs):
@@ -38,5 +44,5 @@ class BlazeView(View):
       return HttpResponse("Successful", content_type="text/html")
 
     except Exception, e:
+      # logger.warning("{}".format(e))
       return HttpResponseBadRequest()
-      #logger.warning("Incorrect format for arguments. {}".format(e))

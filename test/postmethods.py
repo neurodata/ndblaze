@@ -57,8 +57,12 @@ def getBlosc (p, time=False):
   elif p.channels is None:
     url = 'http://{}/blaze/{}/blosc/{}/{},{}/{},{}/{},{}/'.format ( SITE_HOST, p.token, p.resolution, *p.args )
   # Get the image back
+  import time
+  start = time.time()
   raw_data = urllib2.urlopen (url).read()
-  return blosc.unpack_array(raw_data)
+  print time.time()-start
+  # return blosc.unpack_array(raw_data)
+  return None
 
 
 # def postBlosc (p, post_data, time=False):
